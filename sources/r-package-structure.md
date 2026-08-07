@@ -451,12 +451,19 @@ no change. A signal that fires when nothing happened is how a signal stops
 being read.
 
 The test is cheap and worth running when unsure — compose from the tag and from
-`main`, and compare:
+`main`, and compare. Run this from a clone of the composer repo:
 
-```
-git archive house-style-v1 | tar -x -C "$a"; git archive main | tar -x -C "$b"
-Rscript "$a/compose-house-style.R" --check --repo <name> --vault "$a/sources"
-Rscript "$b/compose-house-style.R" --check --repo <name> --vault "$b/sources"
+```bash
+repo=hvtiPlotR    # the consumer to test against
+
+old=$(mktemp -d); new=$(mktemp -d)
+git archive house-style-v1 | tar -x -C "$old"
+git archive main          | tar -x -C "$new"
+
+Rscript "$old/compose-house-style.R" --check --repo "$repo" --vault "$old/sources"
+Rscript "$new/compose-house-style.R" --check --repo "$repo" --vault "$new/sources"
+
+rm -rf "$old" "$new"
 ```
 
 Same verdict from both means the tag does not need to move.
