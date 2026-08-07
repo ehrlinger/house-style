@@ -279,6 +279,29 @@ README rule reads a missing badge as an honest absence and a present one as a
 claim. Commit a `.lintr` so the rules live in the repo rather than in whichever
 `lintr` version the runner happened to install.
 
+**Install the package itself**, not only its dependencies:
+
+```yaml
+- uses: r-lib/actions/setup-r-dependencies@v2
+  with:
+    extra-packages: any::lintr, local::.
+```
+
+`object_usage_linter` needs the package's own namespace to resolve internal
+calls. Without `local::.` it cannot see them and reports every call to one as an
+undefined global. On hvtiPropensityScores that was 58 phantom lints against 12
+real ones — the noise outnumbered the signal five to one.
+
+Worse than the count: the phantoms were *hiding a real finding of the same
+type*. Once they cleared, one genuine `object_usage_linter` hit remained, an
+assigned-but-unused local. In a list of 58 identical-looking messages it would
+never have been read. A check calibrated wrongly is worse than a check switched
+off, because the true findings arrive dressed as the false ones and get
+dismissed together.
+
+So when a lint backlog looks implausibly large, check this before treating any
+of it as debt.
+
 `lint.yaml` also carries a **`docs-current`** job, on `pull_request` only:
 
 ```yaml
