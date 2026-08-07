@@ -28,9 +28,37 @@ jobs:
       # test-mirror.R compares sources/ against the Obsidian vault and
       # skip_if_not()s when the vault is absent -- which is always, on a
       # runner. That skip is by design: it is a human-with-the-vault check.
-      # Every other test runs and gates the job.
+      # Every other test runs and gates the job, including the MANIFEST
+      # check, which pins the mirror's bytes without needing the vault.
       - name: Run the suite
         run: Rscript tests/testthat.R
+
+      # A skip renders as a bare 'S' in the summary reporter, one character
+      # away from a pass. That made a green job read as "the mirror is fine"
+      # when it meant "the mirror was not checked" -- see #8, where the
+      # resulting drift surfaced in a downstream repo instead of here.
+      #
+      # This annotates rather than fails on purpose. Failing would redden
+      # every push forever, since a runner can never have the vault, and a
+      # permanently red check is ignored within a week. The blocking gate
+      # for this lives at the tag move (bin/move-tag.sh), which is the step
+      # that actually propagates drift and does run on a machine with the
+      # vault.
+      - name: Report what the mirror check could not verify
+        if: always()
+        run: |
+          if [ -d "$HOME/Documents/ObsidianVault/memory" ]; then
+            echo "Vault present: sources/ was verified against it."
+          else
+            echo "::warning title=Mirror not verified against the vault::sources/ is byte-pinned by sources/MANIFEST, but nothing here compared it to the vault -- no runner has one. Vault freshness is gated at the tag move by bin/move-tag.sh."
+            {
+              echo "### Mirror freshness: **not verified**"
+              echo
+              echo "\`sources/\` matches \`sources/MANIFEST\`, so no hand edit slipped in."
+              echo "Whether \`sources/\` still matches the vault is *unknown to this job*."
+              echo "That check runs in \`bin/move-tag.sh\` before \`house-style-v1\` moves."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       # End-to-end smoke test of the CLI, which the unit suite does not cover:
       # it exercises the installed dependencies and the actual entry point.

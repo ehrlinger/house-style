@@ -46,6 +46,77 @@ load_registry <- function(path) {
   })
 }
 
+# --- Source manifest -------------------------------------------------------
+#
+# `sources/` is a mirror of the vault, and CI has no vault to compare it
+# against. The manifest is the one check a runner can actually perform: it
+# pins the bytes of each mirrored file, so a hand edit to `sources/` reddens
+# CI instead of propagating to nine repositories as a phantom drift report.
+#
+# It does NOT detect vault drift -- nothing running without the vault can.
+# That check lives in test-mirror.R and in the pre-tag gate.
+#
+# The hash is over file bytes, not over the strings read_sources() returns:
+# the provenance header answers "what was composed", the manifest answers
+# "what is on disk", and a stray trailing newline matters to the second.
+
+MANIFEST_FILE <- "MANIFEST"
+
+source_hashes <- function(dir) {
+  paths <- file.path(dir, SOURCE_FILES)
+  missing <- SOURCE_FILES[!file.exists(paths)]
+
+  if (length(missing)) {
+    stop("Missing source document(s) in ", dir, ": ",
+         paste(missing, collapse = ", "), call. = FALSE)
+  }
+
+  out <- vapply(paths, function(p) digest::digest(file = p, algo = "sha256"), character(1))
+  stats::setNames(out, SOURCE_FILES)
+}
+
+format_manifest <- function(hashes) {
+  # Emitted in SOURCE_FILES order regardless of the input's order, so the
+  # committed file is a function of content alone and never churns.
+  c(
+    "# sha256 of each file in this directory. Generated -- do not edit by hand.",
+    "# Regenerate with: Rscript tools/write-manifest.R",
+    sprintf("%-30s %s", SOURCE_FILES, hashes[SOURCE_FILES])
+  )
+}
+
+parse_manifest <- function(lines) {
+  body <- grep("^\\s*(#|$)", lines, value = TRUE, invert = TRUE)
+  fields <- strsplit(trimws(body), "\\s+")
+
+  bad <- vapply(fields, function(f) length(f) != 2L || !grepl("^[0-9a-f]{64}$", f[2L]), logical(1))
+  if (any(bad)) {
+    stop("Malformed manifest line(s): ", paste(body[bad], collapse = "; "),
+         "\nEach line must be '<filename> <sha256>'.", call. = FALSE)
+  }
+
+  out <- stats::setNames(
+    vapply(fields, `[`, character(1), 2L),
+    vapply(fields, `[`, character(1), 1L)
+  )
+
+  # identical() on sorted names rather than setequal(): setequal() ignores
+  # multiplicity, so a manifest naming a source twice would pass and then
+  # lose the duplicate to out[SOURCE_FILES], which keeps only the first
+  # match. A silently dropped line in the file whose job is to catch edits
+  # to sources/ is the exact failure this manifest exists to prevent.
+  if (!identical(sort(names(out)), sort(unname(SOURCE_FILES)))) {
+    dupes <- unique(names(out)[duplicated(names(out))])
+    stop("Manifest must name each source document exactly once. Duplicated: ",
+         paste(dupes, collapse = ", "),
+         "; unexpected: ", paste(setdiff(names(out), SOURCE_FILES), collapse = ", "),
+         "; missing: ", paste(setdiff(SOURCE_FILES, names(out)), collapse = ", "),
+         call. = FALSE)
+  }
+
+  out[SOURCE_FILES]
+}
+
 read_sources <- function(vault_dir) {
   paths <- file.path(vault_dir, SOURCE_FILES)
   missing <- SOURCE_FILES[!file.exists(paths)]
