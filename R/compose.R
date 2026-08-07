@@ -100,9 +100,16 @@ parse_manifest <- function(lines) {
     vapply(fields, `[`, character(1), 1L)
   )
 
-  if (!setequal(names(out), SOURCE_FILES)) {
-    stop("Manifest does not name exactly the source documents. Unexpected: ",
-         paste(setdiff(names(out), SOURCE_FILES), collapse = ", "),
+  # identical() on sorted names rather than setequal(): setequal() ignores
+  # multiplicity, so a manifest naming a source twice would pass and then
+  # lose the duplicate to out[SOURCE_FILES], which keeps only the first
+  # match. A silently dropped line in the file whose job is to catch edits
+  # to sources/ is the exact failure this manifest exists to prevent.
+  if (!identical(sort(names(out)), sort(unname(SOURCE_FILES)))) {
+    dupes <- unique(names(out)[duplicated(names(out))])
+    stop("Manifest must name each source document exactly once. Duplicated: ",
+         paste(dupes, collapse = ", "),
+         "; unexpected: ", paste(setdiff(names(out), SOURCE_FILES), collapse = ", "),
          "; missing: ", paste(setdiff(SOURCE_FILES, names(out)), collapse = ", "),
          call. = FALSE)
   }

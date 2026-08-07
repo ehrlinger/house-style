@@ -47,6 +47,16 @@ test_that("parse_manifest rejects a manifest naming the wrong files", {
   expect_error(parse_manifest(lines), "writing-voise\\.md")
 })
 
+test_that("parse_manifest rejects a manifest naming a source twice", {
+  # A duplicate is the shape a hand edit leaves behind, and subsetting by
+  # name would silently keep the first and drop the rest -- an unnoticed
+  # line in the file whose whole job is to notice unnoticed edits.
+  h <- source_hashes(testthat::test_path("fixtures", "vault"))
+  lines <- c(format_manifest(h), sprintf("%-30s %s", "writing-voice.md", strrep("0", 64)))
+
+  expect_error(parse_manifest(lines), "twice|duplicate|exactly once")
+})
+
 test_that("parse_manifest rejects a malformed hash", {
   h <- source_hashes(testthat::test_path("fixtures", "vault"))
   lines <- sub("[0-9a-f]{64}", "notahash", format_manifest(h))
