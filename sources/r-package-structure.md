@@ -386,7 +386,7 @@ behind in two repos — resolved on all five matrix platforms, used by nothing,
 and leaving the roxygen2 version written down in two files that a bump has to
 keep in agreement.
 
-Two copies of a pin is not a formatting problem, it is a second place for it
+A pin in two places is not a formatting problem, it is a second place for it
 to be wrong, and workflow-level `env:` does not fix it: `env:` is scoped per
 *file*, so pins living in `R-CMD-check.yaml` and `lint.yaml` would need the
 variable declared twice — hiding the duplication rather than removing it. If a
