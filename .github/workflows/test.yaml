@@ -32,9 +32,47 @@ jobs:
       - name: Run the suite
         run: Rscript tests/testthat.R
 
-      # Composition must be reproducible from a clean checkout, not just on a
-      # machine that has run it before.
-      - name: Compose is runnable from a clean checkout
+      # End-to-end smoke test of the CLI, which the unit suite does not cover:
+      # it exercises the installed dependencies and the actual entry point.
+      #
+      # It composes into a throwaway repo via a throwaway registry, because
+      # repos.yml holds absolute machine-local paths and none of them exist on
+      # a runner. Then it tampers with the artifact and requires the drift
+      # check to catch it -- so the step fails if composition breaks, if the
+      # artifact is empty or malformed, or if drift detection stops working.
+      - name: Smoke test the CLI end to end
         run: |
-          Rscript compose-house-style.R --check --repo hvtiPlotR --vault sources || \
-            echo "note: hvtiPlotR not present on this runner; registry paths are machine-local"
+          set -e
+          tmp=$(mktemp -d)
+          mkdir -p "$tmp/fakerepo"
+          cat > "$tmp/registry.yml" <<YML
+          repos:
+            - name: smoketest
+              path: $tmp/fakerepo
+              profile: package-internal
+              default_persona: a
+              secondary_personas: [c]
+          YML
+          cp "$tmp/registry.yml" repos.yml
+
+          Rscript compose-house-style.R --repo smoketest --vault sources
+          Rscript compose-house-style.R --check --repo smoketest --vault sources
+
+          test -s "$tmp/fakerepo/.claude/house-style.md"
+          grep -q 'GENERATED FILE' "$tmp/fakerepo/.claude/house-style.md"
+
+          # Drift must be detected, and specifically as exit 2. Asserting only
+          # "non-zero" would pass if --check failed for an unrelated reason --
+          # exit 1 covers usage errors and missing sources -- so a broken drift
+          # check masked by any other error would slip through.
+          printf '\nhand edit\n' >> "$tmp/fakerepo/.claude/house-style.md"
+          set +e
+          Rscript compose-house-style.R --check --repo smoketest --vault sources
+          rc=$?
+          set -e
+          if [ "$rc" -ne 2 ]; then
+            echo "::error::expected exit 2 (drift detected), got $rc -- 1 means the CLI errored for another reason, 0 means drift went unnoticed"
+            exit 1
+          fi
+
+          git checkout -- repos.yml
