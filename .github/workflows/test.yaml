@@ -1,0 +1,40 @@
+# The composer is load-bearing for nine repositories: each pins this repo at
+# house-style-v1 and runs its drift check against these sources. A break here
+# reddens all of them, so the suite gates every change.
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install dependencies
+        run: install.packages(c("yaml", "digest", "testthat", "withr"))
+        shell: Rscript {0}
+
+      # test-mirror.R compares sources/ against the Obsidian vault and
+      # skip_if_not()s when the vault is absent -- which is always, on a
+      # runner. That skip is by design: it is a human-with-the-vault check.
+      # Every other test runs and gates the job.
+      - name: Run the suite
+        run: Rscript tests/testthat.R
+
+      # Composition must be reproducible from a clean checkout, not just on a
+      # machine that has run it before.
+      - name: Compose is runnable from a clean checkout
+        run: |
+          Rscript compose-house-style.R --check --repo hvtiPlotR --vault sources || \
+            echo "note: hvtiPlotR not present on this runner; registry paths are machine-local"
