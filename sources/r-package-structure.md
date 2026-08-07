@@ -325,9 +325,16 @@ of it as debt.
 ```yaml
 - name: Documentation is current
   run: |
-    Rscript -e 'devtools::document()'
-    git diff --exit-code man/ NAMESPACE
+    Rscript -e 'roxygen2::roxygenise()'
+    git diff --exit-code man/ NAMESPACE DESCRIPTION
 ```
+
+Call `roxygen2::roxygenise()` rather than `devtools::document()`. They do the
+same work, but devtools pulls roxygen2 in *transitively*, so the version that
+runs is whatever the resolver picked, not the one you pinned — which is
+precisely how a pin gets defeated without anyone editing it. And diff
+`DESCRIPTION` too: roxygenise writes `Config/roxygen2/version` and the
+`Collate:` field, so leaving it out lets real regeneration drift pass unseen.
 
 It answers a question no other workflow answers, which is the bar for adding
 anything: *are the generated files in sync with the sources they come from?*
@@ -349,6 +356,53 @@ Two things make this reliable rather than flaky. `DESCRIPTION` pins
 author used and a version bump can't masquerade as drift. And it does **not**
 build the manual, so the check-time budget decision stands untouched — this is
 a `git diff`, not a LaTeX run.
+
+**Set `dependencies: '"hard"'` on this job.** The action defaults to
+`dependencies: "all"`, which installs the package's entire `Suggests` tree and
+every system requirement it maps to. `roxygenise()` needs only the package's
+`Imports` loadable, so on hvtiRdatasets the default was fetching arrow, dplyr
+and quarto to support one second of real work. The doubled quoting is not a
+typo — the input is an R expression, so `'"hard"'` is what yields `"hard"`.
+
+The cost is not just minutes. On 2026-08-07 an Ubuntu mirror degraded to
+roughly 92 kB in 21 seconds and that job sat in `Installing system
+requirements` for 32 minutes before being cancelled, while hvtiRutilities'
+equivalent — same action, same pin, shorter apt queue — came through the same
+window in 49 seconds. Every package you install is exposure to someone else's
+outage, so install the fewest that answer the question.
+
+Check three things before narrowing it: no `@eval`/`@evalRd` tags, no
+top-level `library()`/`require()` in `R/`, and no `Suggests` package
+referenced in `R/`. A reference inside a function body guarded by
+`requireNamespace()` is fine — roxygen loads the code, it does not run it.
+`pkgload`, which `roxygenise()` loads code with, arrives via roxygen2's own
+`Imports` and is unaffected.
+
+**Install a tool only in the job that runs it.** A pinned version should
+appear exactly once per repository. `extra-packages` entries outlive the step
+that needed them: when `devtools::document()` moved out of `R-CMD-check.yaml`
+into `docs-current`, both `any::devtools` and `any::roxygen2@8.1.0` stayed
+behind in two repos — resolved on all five matrix platforms, used by nothing,
+and leaving the roxygen2 version written down in two files that a bump has to
+keep in agreement.
+
+A pin in two places is not a formatting problem, it is a second place for it
+to be wrong, and workflow-level `env:` does not fix it: `env:` is scoped per
+*file*, so pins living in `R-CMD-check.yaml` and `lint.yaml` would need the
+variable declared twice — hiding the duplication rather than removing it. If a
+version genuinely must be read in two live jobs, derive it from
+`Config/roxygen2/version` in `DESCRIPTION`, which is the value the check is
+asserting against anyway. Otherwise delete the copy that no step uses.
+
+So when moving a step between workflows, delete its dependencies in the same
+commit. Grep the workflow for every package it installs and confirm something
+still calls it.
+
+One more trap, from the commit that fixed the above: `extra-packages: |` is a
+YAML *literal block scalar*, so `#` lines inside it are string content, not
+comments. pak reads them as package refs and the run dies with
+`Cannot parse packages: #, pinned:, ...`. Explanatory comments go above the
+step, never inside the block.
 
 `check-manual.yaml` is the one that runs `--as-cran` **without**
 `--no-manual`, so the PDF manual is actually built. That step is what catches
