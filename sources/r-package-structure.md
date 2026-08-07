@@ -357,6 +357,27 @@ author used and a version bump can't masquerade as drift. And it does **not**
 build the manual, so the check-time budget decision stands untouched — this is
 a `git diff`, not a LaTeX run.
 
+**Set `dependencies: '"hard"'` on this job.** The action defaults to
+`dependencies: "all"`, which installs the package's entire `Suggests` tree and
+every system requirement it maps to. `roxygenise()` needs only the package's
+`Imports` loadable, so on hvtiRdatasets the default was fetching arrow, dplyr
+and quarto to support one second of real work. The doubled quoting is not a
+typo — the input is an R expression, so `'"hard"'` is what yields `"hard"`.
+
+The cost is not just minutes. On 2026-08-07 an Ubuntu mirror degraded to
+roughly 92 kB in 21 seconds and that job sat in `Installing system
+requirements` for 32 minutes before being cancelled, while hvtiRutilities'
+equivalent — same action, same pin, shorter apt queue — came through the same
+window in 49 seconds. Every package you install is exposure to someone else's
+outage, so install the fewest that answer the question.
+
+Check three things before narrowing it: no `@eval`/`@evalRd` tags, no
+top-level `library()`/`require()` in `R/`, and no `Suggests` package
+referenced in `R/`. A reference inside a function body guarded by
+`requireNamespace()` is fine — roxygen loads the code, it does not run it.
+`pkgload`, which `roxygenise()` loads code with, arrives via roxygen2's own
+`Imports` and is unaffected.
+
 **Install a tool only in the job that runs it.** A pinned version should
 appear exactly once per repository. `extra-packages` entries outlive the step
 that needed them: when `devtools::document()` moved out of `R-CMD-check.yaml`
