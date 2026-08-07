@@ -276,16 +276,34 @@ missing token should fail the build or not.
 `lint.yaml` sets `LINTR_ERROR_ON_LINT: true`. A lint job that reports and then
 passes is a green badge asserting nothing, which is worse than no badge — the
 README rule reads a missing badge as an honest absence and a present one as a
-claim. Commit a `.lintr` so the rules live in the repo rather than in whichever
-`lintr` version the runner happened to install.
+claim. Commit a `.lintr` so the rule *selection* lives in the repo rather than
+being whatever the defaults happen to be.
 
-**Install the package itself**, not only its dependencies:
+**Pin the lintr version, and install the package itself:**
 
 ```yaml
 - uses: r-lib/actions/setup-r-dependencies@v2
   with:
-    extra-packages: any::lintr, local::.
+    extra-packages: any::lintr@3.4.0, local::.
 ```
+
+Two separate requirements in one line.
+
+**`@3.4.0` — pin it.** A `.lintr` pins *which linters run*; it does not pin
+*what each one checks*. A lintr release can add a check to an existing linter
+and redden a green build with nobody touching the code. That is not
+hypothetical: 3.4.0 added a `<<-` check to `assignment_linter`, so
+temporal_hazard linted clean on a developer's 3.3.0.1 and failed CI on 3.4.0 —
+same commit, same config. The same release also changed that linter's
+arguments, dropping `allow_cascading_assign`, so a config written against one
+version can be invalid on the other.
+
+Pinning makes lint failures mean "the code changed", which is the only way the
+signal stays readable. Upgrade deliberately, as its own PR, so a new release's
+findings arrive as a reviewable diff rather than as a mystery red on unrelated
+work. And when you do upgrade, run it locally against the pinned version first
+— a developer machine carrying an older lintr will not reproduce CI, and will
+report the code clean while the runner disagrees.
 
 `object_usage_linter` needs the package's own namespace to resolve internal
 calls. Without `local::.` it cannot see them and reports every call to one as an
@@ -424,6 +442,31 @@ git push -f origin house-style-v1
 Advancing it is what makes every repo start reporting drift until it
 recomposes — the intended signal, not a failure. Between advances, consumer CI
 is stable against whatever is happening on the composer's branches.
+
+**Advance it only for changes that alter what consumers compose** — the four
+documents under `sources/`, or the composer itself. Not for repo-internal
+changes like CI workflows or README edits: those produce byte-identical
+artifacts, so advancing would send every repo a drift signal that resolves to
+no change. A signal that fires when nothing happened is how a signal stops
+being read.
+
+The test is cheap and worth running when unsure — compose from the tag and from
+`main`, and compare. Run this from a clone of the composer repo:
+
+```bash
+repo=hvtiPlotR    # the consumer to test against
+
+old=$(mktemp -d); new=$(mktemp -d)
+git archive house-style-v1 | tar -x -C "$old"
+git archive main          | tar -x -C "$new"
+
+Rscript "$old/compose-house-style.R" --check --repo "$repo" --vault "$old/sources"
+Rscript "$new/compose-house-style.R" --check --repo "$repo" --vault "$new/sources"
+
+rm -rf "$old" "$new"
+```
+
+Same verdict from both means the tag does not need to move.
 
 Be straight about what this does and doesn't buy: a given CI run is
 reproducible only until the tag next moves. That is weaker than a SHA and
