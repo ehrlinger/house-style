@@ -7,8 +7,6 @@
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
-VALID_PROFILES <- c("package-internal", "package-cran", "book")
-
 # Source documents, in composition order. Names are the internal keys;
 # values are the filenames expected in the vault memory directory.
 SOURCE_FILES <- c(
@@ -17,6 +15,35 @@ SOURCE_FILES <- c(
   context   = "writing-context.md",
   structure = "r-package-structure.md"
 )
+
+# Which sources each profile actually composes -- and therefore which ones
+# its provenance header records.
+#
+# The header is not only documentation: check_repo() recomposes and compares
+# bytes, so every line in it is load-bearing. Hashing a source a profile
+# excludes makes the drift check strictly more sensitive than the artifact
+# it guards. `book` omits the structural rules, so an edit to them cannot
+# change a byte of a book's body -- yet before this table, it still changed
+# the recorded hash, and hvti_graphics reported drift for a change that
+# provably could not affect it. That is the failure this whole mechanism
+# exists to prevent, reproduced inside the mechanism itself.
+#
+# Kept as data, not a function, on purpose. The determinism test in
+# test-compose.R is a direct-body check: it greps each guarded function's
+# deparsed body and does not follow calls into helpers. A shared helper
+# between provenance_header() and compose_house_style() would be a hole in
+# that guard. Indexing a literal list is not a call, so both functions stay
+# fully covered while still reading the rule from one place.
+#
+# Order within each entry follows SOURCE_FILES, so header lines never churn.
+PROFILE_SOURCES <- list(
+  `package-internal` = c("voice", "personas", "context", "structure"),
+  `package-cran`     = c("voice", "personas", "context", "structure"),
+  `book`             = c("voice", "personas", "context")
+)
+
+# Derived, so a profile can never be registry-valid but composition-unknown.
+VALID_PROFILES <- names(PROFILE_SOURCES)
 
 load_registry <- function(path) {
   raw <- yaml::yaml.load_file(path)
@@ -175,13 +202,22 @@ filter_personas <- function(personas_md, keep) {
 # mechanism exists to prevent. The source hashes are the identity; git records
 # when the file changed.
 provenance_header <- function(sources, entry) {
+  keys <- PROFILE_SOURCES[[entry$profile]]
+  if (is.null(keys)) {
+    stop("Cannot compose a provenance header for unknown profile '", entry$profile,
+         "'. Valid: ", paste(VALID_PROFILES, collapse = ", "),
+         "\nWithout a source list the header would name no sources at all, and",
+         " --check would compare against a document nothing can be drifted from.",
+         call. = FALSE)
+  }
+
   hashes <- vapply(
-    names(SOURCE_FILES),
+    keys,
     function(k) substr(digest::digest(sources[[k]], algo = "sha256", serialize = FALSE), 1L, 12L),
     character(1)
   )
 
-  source_lines <- sprintf("    %-30s sha256:%s", SOURCE_FILES, hashes[names(SOURCE_FILES)])
+  source_lines <- sprintf("    %-30s sha256:%s", SOURCE_FILES[keys], hashes[keys])
 
   paste(c(
     "<!--",
@@ -202,6 +238,15 @@ provenance_header <- function(sources, entry) {
 }
 
 compose_house_style <- function(sources, entry) {
+  keys <- PROFILE_SOURCES[[entry$profile]]
+  if (is.null(keys)) {
+    stop("Cannot compose for unknown profile '", entry$profile,
+         "'. Valid: ", paste(VALID_PROFILES, collapse = ", "),
+         "\nAn unrecognised profile would silently drop every optional section",
+         " rather than fail, producing a document that still looked plausible.",
+         call. = FALSE)
+  }
+
   keep <- unique(c(entry$default_persona, entry$secondary_personas))
   personas <- filter_personas(sources$personas, keep = keep)
 
@@ -224,7 +269,7 @@ compose_house_style <- function(sources, entry) {
     sources$context
   )
 
-  if (!identical(entry$profile, "book")) {
+  if ("structure" %in% keys) {
     parts <- c(parts, rule, sources$structure)
   }
 

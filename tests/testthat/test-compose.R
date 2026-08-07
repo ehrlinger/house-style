@@ -8,7 +8,7 @@ entry_book <- function() list(
   profile = "book", default_persona = "a", secondary_personas = "b"
 )
 
-test_that("provenance header names every source with a hash and no timestamp", {
+test_that("a package profile's header names all four sources, with no timestamp", {
   src <- read_sources(testthat::test_path("fixtures", "vault"))
   hdr <- provenance_header(src, entry_internal())
 
@@ -19,6 +19,88 @@ test_that("provenance header names every source with a hash and no timestamp", {
 
   # Determinism: no date anywhere in the header.
   expect_false(grepl("\\d{4}-\\d{2}-\\d{2}", hdr))
+})
+
+test_that("the book profile's header omits the source it never composes", {
+  src <- read_sources(testthat::test_path("fixtures", "vault"))
+  hdr <- provenance_header(src, entry_book())
+
+  expect_match(hdr, "writing-voice.md", fixed = TRUE)
+  expect_match(hdr, "writing-reader-profile.md", fixed = TRUE)
+  expect_match(hdr, "writing-context.md", fixed = TRUE)
+
+  # `book` never composes the structural rules, so an edit to them cannot
+  # change a byte of this artifact's body. Recording their hash here would
+  # make check_repo() report drift for a change that provably cannot affect
+  # the file -- a red check that does not mean what a red check should mean.
+  expect_false(grepl("r-package-structure.md", hdr, fixed = TRUE))
+  expect_length(gregexpr("sha256:", hdr, fixed = TRUE)[[1]], 3L)
+})
+
+# The regression this guards is not "the header is wrong" but "the two
+# functions disagree". provenance_header() decides what the artifact claims
+# went into it; compose_house_style() decides what actually did. Editing
+# either alone reintroduces the defect in the opposite direction -- an
+# unrecorded source would be worse, since real drift would then go
+# undetected. Deriving both from PROFILE_SOURCES is what keeps them honest;
+# this asserts the property rather than the mechanism.
+test_that("every profile's header names exactly the sources whose bodies it composes", {
+  src <- read_sources(testthat::test_path("fixtures", "vault"))
+
+  # Each fixture carries a unique H1, so body presence is detectable
+  # independently of whatever the header claims.
+  markers <- c(
+    voice     = "# Voice fixture",
+    personas  = "# Reader Profiles fixture",
+    context   = "# Context fixture",
+    structure = "# Structure fixture"
+  )
+
+  for (profile in VALID_PROFILES) {
+    entry <- list(
+      name = "fixture", path = "/tmp/fixture", profile = profile,
+      default_persona = "a", secondary_personas = character(0)
+    )
+    hdr <- provenance_header(src, entry)
+    out <- compose_house_style(src, entry)
+
+    named <- names(SOURCE_FILES)[
+      vapply(SOURCE_FILES, function(f) grepl(f, hdr, fixed = TRUE), logical(1))
+    ]
+    composed <- names(markers)[
+      vapply(markers, function(m) grepl(m, out, fixed = TRUE), logical(1))
+    ]
+
+    expect_setequal(named, composed)
+  }
+})
+
+test_that("an unknown profile is refused rather than silently composing nothing", {
+  src <- read_sources(testthat::test_path("fixtures", "vault"))
+  bogus <- list(
+    name = "nope", path = "/tmp/nope", profile = "not-a-profile",
+    default_persona = "a", secondary_personas = character(0)
+  )
+
+  # load_registry() already rejects these, but both functions are callable
+  # directly. Without a guard, PROFILE_SOURCES[["not-a-profile"]] is NULL:
+  # the header would list no sources at all and the structure section would
+  # vanish, silently, from a document that still looked plausible.
+  expect_error(provenance_header(src, bogus), "unknown profile")
+  expect_error(compose_house_style(src, bogus), "unknown profile")
+})
+
+test_that("PROFILE_SOURCES is the single source of truth for profiles", {
+  expect_identical(VALID_PROFILES, names(PROFILE_SOURCES))
+
+  for (p in names(PROFILE_SOURCES)) {
+    keys <- PROFILE_SOURCES[[p]]
+    expect_true(all(keys %in% names(SOURCE_FILES)))
+    expect_identical(anyDuplicated(keys), 0L)
+
+    # Canonical order, so header lines never churn on a table edit.
+    expect_identical(keys, intersect(names(SOURCE_FILES), keys))
+  }
 })
 
 test_that("composition is byte-deterministic", {

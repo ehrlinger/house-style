@@ -19,7 +19,7 @@ one's copy current.
 | `bin/move-tag.sh` | The only supported way to advance `house-style-v1` — gates on a verified mirror |
 | `tools/gate.R` | Runs the suite in gate mode, where a skipped test counts as a failure |
 | `tools/write-manifest.R` | Regenerates `sources/MANIFEST` after a vault sync |
-| `tests/` | 127 expectations covering composition, drift detection and mirror freshness |
+| `tests/` | 148 expectations covering composition, drift detection and mirror freshness |
 
 ## Why a composer rather than a copied file
 
@@ -59,6 +59,19 @@ A repository composes only the parts that apply to it.
 | `package-internal` | (a) biostatistician, plus (c) for SAS ports | full |
 | `package-cran` | (d) public CRAN user, plus (c) for SAS ports | full, plus the release gate |
 | `book` | (a), with (b) as a constraint | none — a book has no README canonical order |
+
+`R/compose.R` holds that table as `PROFILE_SOURCES`, and both the composed body
+and the provenance header are read from it. **A header records only the sources
+its profile actually composes** — so a `book` artifact names three, not four.
+
+This matters more than it sounds. The header is not just documentation: the
+drift check recomposes and compares bytes, so every line in it is load-bearing.
+Hashing a source a profile excludes makes the check strictly more sensitive than
+the artifact it guards, and `hvti_graphics` went red twice in one afternoon for
+edits to structural rules its profile omits entirely — a byte-identical body,
+reported as drift. A red check that does not mean what a red check should mean
+is the exact failure this repository argues against, so it does not get to live
+inside the mechanism that enforces it.
 
 ## The `house-style-v1` tag
 
@@ -120,3 +133,12 @@ A test asserts that the composition functions call no non-deterministic
 primitive directly. It is a direct-body check: a clock read reached through a
 helper would not be caught, which is why the two functions are written without
 shared helpers between them.
+
+`PROFILE_SOURCES` is shared between them, and is deliberately a literal list
+rather than a lookup function. Indexing data is not a call, so both function
+bodies stay fully covered by that check while still reading the profile rule
+from one place. A second test closes the other half: for every profile, the
+sources the header names must be exactly the sources whose bodies were
+composed. Editing one function alone fails it — including in the direction that
+would otherwise be silent, where a source composes but goes unrecorded and real
+drift stops being detected.
