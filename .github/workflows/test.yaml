@@ -61,10 +61,17 @@ jobs:
           test -s "$tmp/fakerepo/.claude/house-style.md"
           grep -q 'GENERATED FILE' "$tmp/fakerepo/.claude/house-style.md"
 
-          # Drift must be detected, so this check is not one that cannot fail.
+          # Drift must be detected, and specifically as exit 2. Asserting only
+          # "non-zero" would pass if --check failed for an unrelated reason --
+          # exit 1 covers usage errors and missing sources -- so a broken drift
+          # check masked by any other error would slip through.
           printf '\nhand edit\n' >> "$tmp/fakerepo/.claude/house-style.md"
-          if Rscript compose-house-style.R --check --repo smoketest --vault sources; then
-            echo "::error::drift went undetected -- the check is not gating anything"
+          set +e
+          Rscript compose-house-style.R --check --repo smoketest --vault sources
+          rc=$?
+          set -e
+          if [ "$rc" -ne 2 ]; then
+            echo "::error::expected exit 2 (drift detected), got $rc -- 1 means the CLI errored for another reason, 0 means drift went unnoticed"
             exit 1
           fi
 
