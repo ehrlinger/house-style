@@ -1,0 +1,6 @@
+# sha256 of each file in this directory. Generated -- do not edit by hand.
+# Regenerate with: Rscript tools/write-manifest.R
+writing-voice.md               8b478b88c91385aa3ec21ab156f25c74791f1f4832d302a9dfcec6c02da49ad9
+writing-reader-profile.md      73229e0047e70d7245a58c20b77174bdc710d63738a0d29f3a8b52606e948bb2
+writing-context.md             0fdff63162fa40b701b0429eed83d6763ca3885c2c3b1c452a8161fe25678b11
+r-package-structure.md         36f7635f365ac9ee8a8df71eeb5823888aabbd870e1053c212f303d0cd7cf3f4

@@ -12,10 +12,14 @@ one's copy current.
 | Path | What it is |
 |---|---|
 | `sources/` | The four source documents: voice, reader personas, project context, and the structural rules |
+| `sources/MANIFEST` | sha256 of each mirrored source, so CI can detect a hand edit without the vault |
 | `compose-house-style.R` | CLI that composes those into one self-contained `.claude/house-style.md` per repository |
 | `R/compose.R` | The composition functions |
 | `repos.yml` | The registry — the only place the governed repositories are enumerated |
-| `tests/` | 116 expectations covering composition, drift detection and mirror freshness |
+| `bin/move-tag.sh` | The only supported way to advance `house-style-v1` — gates on a verified mirror |
+| `tools/gate.R` | Runs the suite in gate mode, where a skipped test counts as a failure |
+| `tools/write-manifest.R` | Regenerates `sources/MANIFEST` after a vault sync |
+| `tests/` | 127 expectations covering composition, drift detection and mirror freshness |
 
 ## Why a composer rather than a copied file
 
@@ -69,12 +73,35 @@ and the check could never detect drift again.
 The tag moves, deliberately, when the standard changes:
 
 ```bash
-git tag -f -a house-style-v1 <commit> -m 'what changed'
-git push -f origin house-style-v1
+bin/move-tag.sh -m 'what changed'
 ```
 
 Advancing it is what makes every repository report drift until it recomposes.
 That is the intended signal, not a failure.
+
+Use the script rather than `git tag -f` directly. Moving the tag is the moment
+stale sources propagate to nine repositories, and it is the only moment in the
+lifecycle guaranteed to happen on a machine with the vault — so it is where the
+mirror check is both possible and worth blocking on. The script refuses on a
+dirty tree, on a commit that is not an ancestor of `origin/main`, on any test
+failure, and on any test *skip*.
+
+## What checks the mirror, and when
+
+`sources/` is a copy of the vault, and a copy can go stale. Three checks cover
+different halves of that, because no single one can cover all of it:
+
+| Check | Runs | Catches | Cannot catch |
+|---|---|---|---|
+| `sources/MANIFEST` vs `sources/` | CI, every push | a hand edit to `sources/` | a stale sync |
+| `sources/` vs the vault | locally, vault present | a stale mirror | anything, on a runner |
+| `bin/move-tag.sh` | before the tag moves | both, and refuses to propagate | — |
+
+A runner has no vault, so CI genuinely cannot know whether `sources/` is
+current — that is a limit, not an oversight. What CI can do is pin the bytes
+and say plainly that it did not check the rest: the test job emits a warning
+annotation and a job-summary note whenever the vault was absent. Previously it
+printed a skip, which reads like a pass. See #8 for what that cost.
 
 A run is therefore reproducible only until the tag next moves — weaker than a
 SHA, stronger than a branch. The trade holds because moves are deliberate and
