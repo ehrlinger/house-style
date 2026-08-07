@@ -511,8 +511,8 @@ The test is cheap and worth running when unsure — compose from the tag and fro
 repo=hvtiPlotR    # the consumer to test against
 
 old=$(mktemp -d); new=$(mktemp -d)
-git archive house-style-v1 | tar -x -C "$old"
-git archive main          | tar -x -C "$new"
+git archive house-style-v1 | tar -x -f - -C "$old"
+git archive main          | tar -x -f - -C "$new"
 
 Rscript "$old/compose-house-style.R" --check --repo "$repo" --vault "$old/sources"
 Rscript "$new/compose-house-style.R" --check --repo "$repo" --vault "$new/sources"
