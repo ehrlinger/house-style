@@ -1,0 +1,49 @@
+# Registry of repositories governed by the house style.
+# The ONLY place the package list is enumerated. Adding a package means
+# adding an entry here and running the composer.
+repos:
+  - name: hvtiPlotR
+    path: ~/Documents/GitHub/hvtiPlotR
+    profile: package-internal
+    default_persona: a
+    secondary_personas: [c]
+  - name: hvtiRutilities
+    path: ~/Documents/GitHub/hvtiRutilities
+    profile: package-internal
+    default_persona: a
+    secondary_personas: [c]
+  - name: hvtiPropensityScores
+    path: ~/Documents/GitHub/hvtiPropensityScores
+    profile: package-internal
+    default_persona: a
+    secondary_personas: [c]
+  - name: hvtiRtables
+    path: ~/Documents/GitHub/hvtiRtables
+    profile: package-internal
+    default_persona: a
+    secondary_personas: [c]
+  - name: hvtiRdatasets
+    path: ~/Documents/GitHub/hvtiRdatasets
+    profile: package-internal
+    default_persona: a
+    secondary_personas: [c]
+  - name: hvtiBoostmtree
+    path: ~/Documents/GitHub/hvtiBoostmtree
+    profile: package-internal
+    default_persona: a
+    secondary_personas: []
+  - name: ggRandomForests
+    path: ~/Documents/GitHub/ggRandomForests
+    profile: package-cran
+    default_persona: d
+    secondary_personas: []
+  - name: TemporalHazard
+    path: ~/Documents/GitHub/temporal_hazard
+    profile: package-cran
+    default_persona: d
+    secondary_personas: [c]
+  - name: hvti_graphics
+    path: ~/Documents/GitHub/hvti_graphics
+    profile: book
+    default_persona: a
+    secondary_personas: [b]

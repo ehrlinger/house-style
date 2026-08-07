@@ -1,0 +1,207 @@
+# compose.R — house style composition functions.
+#
+# Sourced by compose-house-style.R (the CLI) and by the test runner. Contains
+# no side effects at load time and never touches the filesystem except through
+# an explicit path argument, so tests run against fixtures rather than the
+# real vault.
+
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
+VALID_PROFILES <- c("package-internal", "package-cran", "book")
+
+# Source documents, in composition order. Names are the internal keys;
+# values are the filenames expected in the vault memory directory.
+SOURCE_FILES <- c(
+  voice     = "writing-voice.md",
+  personas  = "writing-reader-profile.md",
+  context   = "writing-context.md",
+  structure = "r-package-structure.md"
+)
+
+load_registry <- function(path) {
+  raw <- yaml::yaml.load_file(path)
+  entries <- raw$repos
+
+  if (!length(entries)) {
+    stop("Registry ", path, " contains no repos.", call. = FALSE)
+  }
+
+  lapply(entries, function(e) {
+    for (field in c("name", "path", "profile", "default_persona")) {
+      if (is.null(e[[field]]) || !nzchar(e[[field]])) {
+        stop("Registry entry is missing required field '", field, "'.", call. = FALSE)
+      }
+    }
+    if (!e$profile %in% VALID_PROFILES) {
+      stop("Registry entry '", e$name, "' has unknown profile '", e$profile,
+           "'. Valid: ", paste(VALID_PROFILES, collapse = ", "), call. = FALSE)
+    }
+    list(
+      name               = e$name,
+      path               = path.expand(e$path),
+      profile            = e$profile,
+      default_persona    = e$default_persona,
+      secondary_personas = as.character(e$secondary_personas %||% character(0))
+    )
+  })
+}
+
+read_sources <- function(vault_dir) {
+  paths <- file.path(vault_dir, SOURCE_FILES)
+  missing <- SOURCE_FILES[!file.exists(paths)]
+
+  if (length(missing)) {
+    stop("Missing source document(s) in ", vault_dir, ": ",
+         paste(missing, collapse = ", "),
+         "\nThe vault is the source of truth; composition cannot proceed without it.",
+         call. = FALSE)
+  }
+
+  out <- lapply(paths, function(p) paste(readLines(p, warn = FALSE, encoding = "UTF-8"), collapse = "\n"))
+  names(out) <- names(SOURCE_FILES)
+
+  empty <- SOURCE_FILES[vapply(out, function(x) !nzchar(trimws(x)), logical(1))]
+  if (length(empty)) {
+    stop("Empty or whitespace-only source document(s) in ", vault_dir, ": ",
+         paste(empty, collapse = ", "),
+         "\nA source with no content would silently drop whole sections from the",
+         " composed artifact.",
+         call. = FALSE)
+  }
+
+  out
+}
+
+# Persona sections are level-2 headings of the form "## (a) Title".
+PERSONA_HEADING <- "^## \\(([a-z])\\)"
+
+filter_personas <- function(personas_md, keep) {
+  lines <- strsplit(personas_md, "\n", fixed = TRUE)[[1]]
+  starts <- grep(PERSONA_HEADING, lines)
+
+  if (!length(starts)) {
+    stop("No persona sections found. Expected level-2 headings like '## (a) ...'.",
+         call. = FALSE)
+  }
+
+  ids <- sub(paste0(PERSONA_HEADING, ".*$"), "\\1", lines[starts])
+  unknown <- setdiff(keep, ids)
+  if (length(unknown)) {
+    stop("Requested persona(s) not present in the source: ",
+         paste(unknown, collapse = ", "), call. = FALSE)
+  }
+
+  ends <- c(starts[-1] - 1L, length(lines))
+  sel <- which(ids %in% keep)            # document order, not `keep` order
+  body <- unlist(Map(seq, starts[sel], ends[sel]))
+  preamble <- if (starts[1] > 1L) seq_len(starts[1] - 1L) else integer(0)
+
+  paste(lines[c(preamble, body)], collapse = "\n")
+}
+
+# Deliberately no timestamp. A date would make the artifact non-deterministic
+# and turn --check permanently red, which is the failure mode this whole
+# mechanism exists to prevent. The source hashes are the identity; git records
+# when the file changed.
+provenance_header <- function(sources, entry) {
+  hashes <- vapply(
+    names(SOURCE_FILES),
+    function(k) substr(digest::digest(sources[[k]], algo = "sha256", serialize = FALSE), 1L, 12L),
+    character(1)
+  )
+
+  source_lines <- sprintf("    %-30s sha256:%s", SOURCE_FILES, hashes[names(SOURCE_FILES)])
+
+  paste(c(
+    "<!--",
+    "  GENERATED FILE - DO NOT EDIT.",
+    "",
+    "  Composed by tools/house-style/compose-house-style.R in the",
+    "  ehrlinger-personal repository. Edit the sources in the Obsidian vault",
+    "  (memory/), then recompose. Editing this file directly will be reverted",
+    "  by the next compose and flagged by --check.",
+    "",
+    sprintf("  repo:            %s", entry$name),
+    sprintf("  profile:         %s", entry$profile),
+    sprintf("  default persona: (%s)", entry$default_persona),
+    "  sources:",
+    source_lines,
+    "-->"
+  ), collapse = "\n")
+}
+
+compose_house_style <- function(sources, entry) {
+  keep <- unique(c(entry$default_persona, entry$secondary_personas))
+  personas <- filter_personas(sources$personas, keep = keep)
+
+  rule <- c("", "---", "")
+
+  parts <- c(
+    provenance_header(sources, entry),
+    "",
+    sprintf("# House Style — %s", entry$name),
+    "",
+    sprintf(
+      "Default reader persona for this repository: **(%s)**. Write for one persona at a time.",
+      entry$default_persona
+    ),
+    rule,
+    sources$voice,
+    rule,
+    personas,
+    rule,
+    sources$context
+  )
+
+  if (!identical(entry$profile, "book")) {
+    parts <- c(parts, rule, sources$structure)
+  }
+
+  paste(c(parts, ""), collapse = "\n")
+}
+
+artifact_path <- function(entry) {
+  file.path(entry$path, ".claude", "house-style.md")
+}
+
+write_house_style <- function(sources, entry) {
+  path <- artifact_path(entry)
+  target_dir <- dirname(path)
+  if (!dir.exists(target_dir)) {
+    created <- dir.create(target_dir, showWarnings = FALSE, recursive = TRUE)
+    if (!created) {
+      stop("Could not create directory ", target_dir, call. = FALSE)
+    }
+  }
+  # enc2utf8() before charToRaw(): charToRaw emits the string's *current*
+  # encoding, and the composed document mixes UTF-8-marked source text with
+  # sprintf() output carrying the native encoding. On a non-UTF-8 locale that
+  # would write bytes check_repo() reads back as UTF-8, so the artifact would
+  # differ by platform -- the non-determinism --check exists to rule out.
+  content <- enc2utf8(compose_house_style(sources, entry))
+  con <- file(path, open = "wb")
+  on.exit(close(con), add = TRUE)
+  writeBin(charToRaw(content), con)
+  invisible(path)
+}
+
+# Trailing-only trim: absorbs a stray editor newline at end of file without
+# masking drift at the start of the document (see check_repo()).
+trim_trailing <- function(x) sub("[[:space:]]+$", "", x)
+
+check_repo <- function(sources, entry) {
+  path <- artifact_path(entry)
+
+  if (!file.exists(path)) {
+    return(list(ok = FALSE, reason = "missing"))
+  }
+
+  expected <- compose_house_style(sources, entry)
+  actual <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+
+  if (identical(trim_trailing(expected), trim_trailing(actual))) {
+    list(ok = TRUE, reason = "")
+  } else {
+    list(ok = FALSE, reason = "stale")
+  }
+}

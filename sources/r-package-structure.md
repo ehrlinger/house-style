@@ -1,0 +1,463 @@
+# R Package Structural Rules — house style
+
+This document governs the structural side of the house style: README order,
+the roxygen contract, vignette roles, pkgdown layout, `DESCRIPTION` fields,
+and versioning. `writing-voice.md` and `writing-reader-profile.md` govern how
+you write; this one governs what has to be there and in what order. It is
+written for the person about to write or audit a package README — most often
+the biostatistician who already knows R and is deciding whether this
+package's front door matches the other seven.
+
+Derived from `hvtiPlotR`, the de-facto template across the eight-package
+portfolio, with a small number of deliberate improvements it does not yet
+itself reflect. Recorded so the other seven — and hvtiPlotR, on those few
+points — can be brought into line with it rather than the rules drifting to
+match whichever package they came from.
+
+## README canonical order
+
+Twelve elements, in this order. Skip an element only when its "required"
+condition doesn't hold — don't reorder around a skip.
+
+| # | Element | Required |
+|---|---|---|
+| 1 | `# <pkg> — <plain-language subtitle>` | always |
+| 2 | Badge block | always |
+| 3 | Provenance callout | if fork, SAS port, or inherited |
+| 4 | Status block | if version < 1.0.0 |
+| 5 | Lede paragraph | always |
+| 6 | Docs-site link | if pkgdown |
+| 7 | Installation | always |
+| 8 | Quick start, runnable | always |
+| 9 | Function reference, grouped tables | always |
+| 10 | Documentation and vignette index | if vignettes |
+| 11 | Related packages | if ecosystem member |
+| 12 | Citation | `package-cran` only |
+
+**Lede openings.** Three are permitted. Which one is right depends on where
+the reader already stands, and forcing everyone through the same opening
+would flatten a real difference between them:
+
+- *What it is and who it is for* — the reader has already been told to use
+  the package. Current examples: hvtiPlotR, hvtiPropensityScores.
+- *The pain you already have* — the reader still needs convincing to adopt.
+  Current example: hvtiRtables.
+- *What works today* — the reader is judging whether the package is ready.
+  Current example: hvtiRdatasets.
+
+Whichever opening you use, the first paragraph says what the package does.
+That part isn't optional across the three.
+
+**Provenance.** Mandatory wherever it applies, and in this portfolio that's
+nearly everywhere — most of these packages started life as something else.
+Three kinds:
+
+- *SAS-macro port* — hvtiPlotR (`plot.sas`), hvtiPropensityScores,
+  hvtiRutilities (`PROC CONTENTS`, `PROC MEANS`), hvtiRtables (SAS table
+  macro).
+- *Upstream fork* — hvtiBoostmtree, forked from `kogalur/boostmtree` at
+  v1.5.1.
+- *Institutional inheritance* — TemporalHazard, from the UAB SAS/C HAZARD
+  code.
+
+The callout states what the package descends from and how faithful it is to
+that source. For a fork, it also states what was renamed and what wasn't —
+a reader diffing against upstream needs to know which names still line up.
+
+**Status block.** Required while the version's major digit is 0, forbidden
+once it isn't. While a package is pre-1.0, the status block says which parts
+are implemented and which aren't, so a reader can judge readiness without
+going and reading the NEWS file. Once you cross 1.0.0 the block goes away —
+the version number is now doing that job.
+
+**Badge tiers.** The order below is fixed; the contents are not. Include a
+badge when the thing it reports on exists, skip it when it doesn't, and don't
+reorder around a skip. Each tier is its own blank-line-separated block, and a
+tier that ends up empty just isn't there.
+
+Six are required of every package, in this order:
+
+1. **R-CMD-check**
+2. **codecov**
+3. **repostatus**
+4. **pkgdown**
+5. **GitHub r-package version**
+6. **lint**
+
+These are required because they're already true. Seven of the eight packages
+run the lint, pkgdown, and test-coverage workflows today; what's missing is
+mostly the badge, not the machinery. A workflow running green that the README
+never mentions is coverage nobody can see, which is its own small version of
+the staleness problem — the check works, and the reader has no way to know.
+repostatus is a static shield with no infrastructure behind it at all, and the
+version badge just reads `DESCRIPTION`, so neither has an excuse.
+
+Where a badge is genuinely missing because the underlying thing is missing,
+the fix is to add the workflow, not to drop the badge. Only hvtiRdatasets is
+in that position, lacking lint, pkgdown, and test-coverage entirely.
+
+**Required for the `package-cran` profile**, after the six:
+
+- CRAN status, cranlogs, cranlogs grand-total.
+
+On an internal package these are meaningless rather than merely optional, so
+they're absent there and that absence is correct. A CRAN package keeps the
+GitHub version badge as well — the two report different numbers, and the gap
+between the released version and the development one is worth seeing.
+
+**Optional**, in this order where they apply:
+
+- lifecycle, License, DOI.
+
+DOI appears only where a Zenodo deposit exists; lifecycle only where the
+package makes a stability claim it means.
+
+Because five of the six required badges report on a workflow, this rule and
+the CI standard have to move together. Requiring the codecov, pkgdown, and
+lint badges is the same as requiring those three workflows.
+
+The hand-rolled dynamic-regex version badge currently living in
+hvtiRutilities is replaced by the standard GitHub r-package badge — it's
+doing the same job with more code to maintain.
+
+**Function reference** is grouped markdown tables by domain, one table per
+function family, each a two-column table naming the callable and describing
+it — the name column is `Function` or `Constructor`, whichever fits the
+package's API. Not nested bullet lists, and not prose. The README's job here
+is navigational — it maps "what am I trying to do" onto "which function" —
+and a table does that in a way a reader can scan that a paragraph can't.
+Tutorial content belongs in the vignettes; behavioral detail belongs in
+roxygen `@details`.
+
+## Roxygen contract
+
+Roxygen 8.0.0, with `Roxygen: list(markdown = TRUE)`.
+
+Every exported object carries `@description`, one `@param` per argument,
+`@return`, `@examples`, and either `@family` or `@seealso`. `@return` is
+mandatory, no exceptions — it's a CRAN requirement, and it's already on the
+release checklist, so an export missing one should never reach that gate in
+the first place.
+
+Internal helpers stay out of the public index — by `@keywords internal` or
+`@noRd`, whichever fits the helper. `@keywords internal` keeps a documented
+topic that's simply hidden from the reference index, right for a helper a
+determined reader might still want to look up. `@noRd` generates no topic at
+all, right for a helper that's purely an implementation detail. The rule is
+the outcome, not the tag: nothing internal shows up in the public index.
+
+**Package-level documentation** lives in `R/<pkg>-package.R`, the filename
+`usethis::use_package_doc()` generates. Three packages currently keep this
+in `help.R` instead; rename with `git mv` — content and `NAMESPACE` are
+unaffected by the move. hvtiRtables has no package doc at all and gains one.
+At minimum it states what the package is, who it's for, the workflow the
+package expects, and links to the vignettes.
+
+**Voice registers**, per `writing-voice.md`:
+
+- `@description` and `@details` — Narrative register.
+- `@param` and `@return` — Terse register.
+- `\value` boilerplate follows R documentation convention rather than either
+  register — see that document's "When NOT to apply this voice" section.
+
+**Examples** run against `sample_*()` companions or stock datasets (`mtcars`,
+`pbc`, `Boston`) — never against PHI, and never against an internal dataset a
+reader outside HVTI can't obtain. An example that's slow but still runnable
+uses `\donttest`, never `\dontrun` — the difference matters because
+`\dontrun` examples don't get checked at all, and a stale one can sit broken
+for a release cycle before anyone notices. An example touching a Suggests
+dependency is guarded with `requireNamespace()`.
+
+## Vignette roles
+
+Vignettes fill named roles, not free-form topics. A reader looking for the
+methods write-up shouldn't have to guess which file it's hiding in.
+
+| Role | Filename | Required for |
+|---|---|---|
+| Overview | `<pkg>.qmd` | all packages |
+| SAS migration | `sas-migration-guide.qmd` | SAS ports; persona (c) |
+| Reference | one or more; consolidated or split by family | packages with more than one family |
+| Methods and mathematics | e.g. `mathematical-foundations.qmd` | method packages |
+| Contributing | `contributing.qmd` | optional |
+
+The SAS-migration vignette ties each R function to the SAS macro it replaces
+and states that the numbers match. Persona (c) doesn't need hand-holding
+through R — they already know R. What they need is confirmation that this
+gives the same answer as the SAS they already trust.
+
+**Reference vignettes.** "One or more" isn't a headcount to hit — it means a
+reference vignette can cover every function family in a single indexed
+document, or be split family by family, whichever suits the package, so long
+as no family goes undocumented and the overview vignette or the pkgdown
+index tells a reader where to look. hvtiPlotR takes the consolidated form:
+`plot-functions.qmd` documents the plotting functions and
+`plot-decorators.qmd` documents the decorator family, both indexed from the
+overview vignette. Under this rule `plot-decorators.qmd` is simply a second
+reference vignette, not a free-form topic outside the table above.
+
+**Naming exemption.** TemporalHazard keeps `sas-to-r-migration.qmd` rather
+than renaming to the standard filename. Renaming a published vignette breaks
+`vignette()` calls and indexed pkgdown URLs that are already out in the
+world, and that's not a price worth paying just for filename consistency.
+hvtiRdatasets, whose `coming-from-sas.qmd` isn't published yet, renames to
+the standard name — there's nothing to break.
+
+**Front matter** carries `title`, `author`, `date: today`, `format: html`
+with `toc: true`, and the three `%\Vignette*` fields with
+`%\VignetteEngine{quarto::html}`.
+
+Vignette prose method — how to write the body once the role and front matter
+are settled — is owned by `vignette-clarity-pass.md` and isn't restated
+here.
+
+## pkgdown
+
+Follows the hvtiPlotR model:
+
+- `reference:` split into titled sections, each with a prose `desc:` that
+  says when to reach for that family, not merely what it contains.
+- `articles:` grouped by vignette role.
+- `navbar:` cross-linking to related packages in the ecosystem.
+- `template:` bootstrap 5 with the light-switch enabled.
+
+Every exported object appears in exactly one `reference:` section. pkgdown
+fails the build on an unreferenced topic, and that failure is the check that
+keeps this rule honest rather than aspirational.
+
+## Continuous integration
+
+Five workflows required of every package, two more on the CRAN profile. A
+package running more than that is almost certainly checking the same thing
+twice — which has already happened three times here, and the cost isn't the
+runner minutes, it's that a wall of green checks stops being read.
+
+The rule for adding another: name the question it answers that no existing
+workflow answers. If the answer is "the same one, on a different day," it
+doesn't get added.
+
+**Required of every package.** The first four run on `pull_request` and on
+`push` to the default branch. Since all work goes through a branch and PR,
+that push trigger is really the merge trigger — don't add feature-branch
+globs, they double every run.
+
+| File | Question it answers | Trigger | Matrix |
+|---|---|---|---|
+| `R-CMD-check.yaml` | Does it build and pass its tests where people use it? | `push[main]`, `pull_request` | macos·release, windows·release, ubuntu·devel, ubuntu·release, ubuntu·oldrel-1 |
+| `test-coverage.yaml` | How much of the code do the tests reach, and which way is it moving? | `push[main]`, `pull_request` | ubuntu·release |
+| `lint.yaml` | Does it match the style the rest of the portfolio is written in? | `push[main]`, `pull_request` | ubuntu·release |
+| `lint.yaml` → `docs-current` job | Do the generated `man/` files still match their roxygen sources? | `pull_request` | ubuntu·release |
+| `pkgdown.yaml` | Does the docs site still build, and does every exported topic still have a home? | `push[main]`, `pull_request`, `release`, `dispatch` | ubuntu·release |
+| `check-manual.yaml` | Does the PDF manual build, and is every `.Rd` free of raw Unicode? | `push[main]`, `release: published`, `workflow_dispatch` | ubuntu·release |
+
+`R-CMD-check.yaml` runs `r-lib/actions/check-r-package@v2` and leaves `args`
+at its default, which is `c("--no-manual", "--as-cran")` — so the CRAN gate is
+already on, and a second workflow to "add `--as-cran`" is adding nothing. Set
+`build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'` and
+`upload-snapshots: true`. Don't restate `error-on: 'warning'`; it's the
+default, and writing a default out invites the belief that it was chosen. On a
+Quarto-vignette package, install the package into the user library before the
+check step — Quarto's subprocess can't resolve `library(<pkg>)` on Windows
+otherwise, and the failure looks like a package defect when it isn't.
+
+`test-coverage.yaml` writes cobertura from `covr::package_coverage()` and
+hands it to `codecov/codecov-action` **once**. Set `files: ./cobertura.xml`
+and `disable_search: true`, so the action uploads what you produced rather
+than what it went looking for.
+
+Be careful with `fail_ci_if_error`. An expression of the shape
+`${{ github.event_name != 'pull_request' || secrets.CODECOV_TOKEN != '' }}`
+does not reliably yield a boolean -- GitHub's `||` returns the first truthy
+*operand*, so this can evaluate to the token string rather than `true`, and it
+is `true` for every non-PR event regardless of whether a token exists. Write a
+condition that can only be `true` or `false`, and decide deliberately whether a
+missing token should fail the build or not.
+
+`lint.yaml` sets `LINTR_ERROR_ON_LINT: true`. A lint job that reports and then
+passes is a green badge asserting nothing, which is worse than no badge — the
+README rule reads a missing badge as an honest absence and a present one as a
+claim. Commit a `.lintr` so the rules live in the repo rather than in whichever
+`lintr` version the runner happened to install.
+
+`lint.yaml` also carries a **`docs-current`** job, on `pull_request` only:
+
+```yaml
+- name: Documentation is current
+  run: |
+    Rscript -e 'devtools::document()'
+    git diff --exit-code man/ NAMESPACE
+```
+
+It answers a question no other workflow answers, which is the bar for adding
+anything: *are the generated files in sync with the sources they come from?*
+`check-manual.yaml` would catch the same drift, but it deliberately runs on
+pushes to the default branch rather than on pull requests, so it only speaks
+after the merge. That gap is real and was hit within a day of this standard
+existing — hvtiRdatasets PR #3 changed the `URL:` field in `DESCRIPTION` without
+regenerating `man/`, passed every check it ran, and the drift surfaced only once
+it reached `main`, needing a second PR to fix.
+
+Put it in `lint.yaml` rather than a sixth workflow. It needs the same R setup
+lint already does, it takes seconds, and `lint.yaml` has become this portfolio's
+fast-pull-request-checks file — hvtiPlotR already runs the house-style drift
+check there. Adding a whole workflow for a two-line job would inflate the count
+the "name the question" rule exists to hold down.
+
+Two things make this reliable rather than flaky. `DESCRIPTION` pins
+`Config/roxygen2/version`, so the runner regenerates with the same roxygen the
+author used and a version bump can't masquerade as drift. And it does **not**
+build the manual, so the check-time budget decision stands untouched — this is
+a `git diff`, not a LaTeX run.
+
+`check-manual.yaml` is the one that runs `--as-cran` **without**
+`--no-manual`, so the PDF manual is actually built. That step is what catches
+raw Unicode in `.Rd` — Greek letters, β̂, combining marks — which
+`--no-manual` skips in silence. It needs `r-lib/actions/setup-tinytex@v2`, and
+only here: TinyTeX installed next to a default `args` is a LaTeX distribution
+downloaded and never invoked, which is the state five workflows in this
+portfolio were in.
+
+It runs on pushes to the default branch rather than on pull requests, because
+building the manual is slow and a check that makes every PR wait is one people
+learn to route around. Since all work goes through a branch and PR, in practice
+that means it runs on the merge commit -- but say "on pushes to the default
+branch", not "on merge": a direct push would trigger it too, and describing a
+trigger as something narrower than it is misleads the next reader.
+
+Two details worth getting right in the workflow itself. Give it a `name:` a
+human can scan in the Actions list (`Check manual`), not the filename with its
+extension. And scope `permissions:` to `contents: read` rather than
+`read-all` -- least privilege costs nothing here and stops the job quietly
+gaining reach if a step is added later.
+
+**Additional on the `package-cran` profile.**
+
+| File | Trigger | Matrix |
+|---|---|---|
+| `spelling.yaml` | `push[main]`, `pull_request` | ubuntu·release |
+| `check-release.yaml` | `release: published`, `workflow_dispatch` | windows·release, **windows·devel**, macos·release, ubuntu·release, ubuntu·devel |
+
+`spelling.yaml` runs `spelling::spell_check_package(use_wordlist = TRUE)`
+against `inst/WORDLIST`. CRAN rejects on misspelled documentation and the check
+takes under a minute, so on a CRAN-bound package it isn't optional. It's cheap
+enough to be worth having anywhere an `inst/WORDLIST` already exists.
+
+`check-release.yaml` is the submission gate, and it is **not** a second
+everyday check — that is exactly what the triplication here was. It differs
+from `check-manual.yaml` in three ways that only matter when a tarball is
+about to go to CRAN: `_R_CHECK_CRAN_INCOMING_` and
+`_R_CHECK_CRAN_INCOMING_REMOTE_` both on; **windows·devel** in the matrix,
+which is the win-builder branch that surprises most often and belongs in no
+other matrix here; and the `check` directory uploaded as an artifact on
+success as well as failure, because `00check.log` carries the per-step
+`[Ns/Ns]` timings and the passing runs are the ones worth trending.
+
+Read those timings against the check-time budget in
+`r-package-release-checklist.md` before submitting. A local total is not the
+number to trust — for ggRandomForests 3.5.1 the local check was 4m44s while
+win-builder returned 8, 10 and 12 minutes, a 2.5x machine factor the margin
+has to absorb. In both CRAN packages the dominant term is the vignette
+rebuild, so that's where the lever is.
+
+**Deliberately not required.**
+
+`rhub.yaml` is `workflow_dispatch`-only so it costs nothing per push, but it
+belongs on `package-cran` alone, and only where `secrets.RHUB_TOKEN` is set.
+Its value is the flavors GitHub runners can't give you — gcc-UBSAN,
+clang-ASAN, valgrind, noLD. On an internal package there's no submission for
+those to protect, and an unmodified copy of the r-hub template is provenance
+without coverage. Where you keep it, dispatch it before a submission and
+record the result in `cran-comments.md`, so the file is evidence rather than
+furniture.
+
+`check-standard.yaml` should not exist. Everywhere it appears here it runs the
+same five-cell matrix as `R-CMD-check.yaml`, on the same triggers, through the
+same action, with strictly fewer safeguards — no `upload-snapshots`, no
+Quarto pre-install. It is the weaker twin, not the complement it looks like.
+
+### The house style drift check
+
+Every repo carrying a composed `.claude/house-style.md` also carries a CI job
+that recomposes from source and fails when the committed artifact disagrees.
+That job checks out the composer from `ehrlinger/ehrlinger-personal`, and it
+**pins `ref: house-style-v1`** rather than taking the default branch.
+
+The pin is a tag, not a commit SHA, and the distinction matters. That repo
+holds two things: the composer script, and a mirrored copy of the four source
+documents CI compares against, because a runner has no vault. Pinning to a SHA
+would freeze the *reference sources* along with the tool, so the check would
+answer "no drift" forever and become decoration. Taking the default branch has
+the opposite problem: a half-finished commit on the composer reddens every
+consumer repo at once.
+
+A moving tag keeps both properties. Advance it deliberately when the standard
+changes:
+
+```
+git tag -f -a house-style-v1 <commit> -m 'what changed'
+git push -f origin house-style-v1
+```
+
+Advancing it is what makes every repo start reporting drift until it
+recomposes — the intended signal, not a failure. Between advances, consumer CI
+is stable against whatever is happening on the composer's branches.
+
+Be straight about what this does and doesn't buy: a given CI run is
+reproducible only until the tag next moves. That is weaker than a SHA and
+stronger than a branch, and the reason it is the right trade here is that
+moves are deliberate and rare rather than incidental to every push. Use
+`house-style-v2` if the composer's CLI ever changes incompatibly, so repos can
+migrate on their own schedule.
+
+### Branch protection
+
+Every repo carries one active branch ruleset on `~DEFAULT_BRANCH` with four
+rules: `pull_request`, `copilot_code_review`, `deletion`, `non_fast_forward`.
+`required_approving_review_count` is 0 and `require_code_owner_review` is true,
+which protects `main` without stopping a single maintainer merging their own
+work.
+
+`copilot_code_review` is what makes review automatic. It requests a Copilot
+review on every PR into the default branch; it does not gate the merge on what
+Copilot says. Requesting it by hand at PR-creation time is the thing that
+doesn't survive contact with a busy week.
+
+This is worth stating because it had already drifted once. In August 2026 only
+four of eight repos enforced anything: two rulesets sat correctly configured
+but disabled, and two repos — including CRAN-published `ggRandomForests` — had
+none at all, so a direct push to `main` would simply have succeeded. The global
+rule against pushing to `main` was written down and unenforced on half the
+portfolio.
+
+A ruleset can be switched off in the web UI without anything noticing, which
+puts it in the same family as the stale synced file this whole house style
+exists to catch. Audit it with:
+
+```
+gh api repos/ehrlinger/<repo>/rulesets \
+  -q '.[] | select(.target=="branch") | "\(.enforcement) \(.name)"'
+```
+
+## DESCRIPTION
+
+Title Case in `Title`. Software names quoted in `Description`. DOIs written
+space-free as `<doi:10.xxxx/yyyy>`. `URL` lists both the GitHub repo and the
+pkgdown site. `BugReports` set. `VignetteBuilder: quarto`.
+`Config/roxygen2/version: 8.0.0`.
+
+## Versioning
+
+Defers entirely to the global versioning rule: a straight three-digit
+semantic version, no `.9000` suffix and no fourth digit, the patch digit for
+incremental work, and the minor and major digits reserved for the
+maintainer's own consolidation decisions — never rolled by an agent on its
+own judgment.
+
+A documentation-only retrofit against this house style is a patch bump, with
+the matching `NEWS.md` entry so the version-grep test passes.
+
+What has to happen before a version actually ships — the CRAN Cookbook audit,
+`R CMD check --as-cran` with the manual built, the check-time budget, the
+reverse-dependency pass — is owned by `r-package-release-checklist.md` and
+isn't restated here. A patch bump on a published package still runs that gate
+in full, because a documentation change rebuilds the vignettes.
