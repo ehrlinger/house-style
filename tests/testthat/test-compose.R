@@ -21,6 +21,22 @@ test_that("a package profile's header names all four sources, with no timestamp"
   expect_false(grepl("\\d{4}-\\d{2}-\\d{2}", hdr))
 })
 
+test_that("the header names the repository that actually composes it", {
+  src <- read_sources(testthat::test_path("fixtures", "vault"))
+  hdr <- provenance_header(src, entry_internal())
+
+  # This text is the artifact's only instruction for regenerating itself.
+  # It went stale when the composer moved out of ehrlinger-personal into
+  # its own repo, and stayed stale through every compose since, because
+  # nothing asserted it -- a reviewer caught it, not CI. A generated file
+  # that misnames its own source is precisely the provenance failure this
+  # header exists to prevent, so the claim is now pinned.
+  expect_match(hdr, "ehrlinger/house-style", fixed = TRUE)
+  expect_match(hdr, "compose-house-style.R", fixed = TRUE)
+  expect_false(grepl("ehrlinger-personal", hdr, fixed = TRUE))
+  expect_false(grepl("tools/house-style", hdr, fixed = TRUE))
+})
+
 test_that("the book profile's header omits the source it never composes", {
   src <- read_sources(testthat::test_path("fixtures", "vault"))
   hdr <- provenance_header(src, entry_book())
