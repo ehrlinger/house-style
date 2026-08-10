@@ -499,7 +499,7 @@ Quarto pre-install. It is the weaker twin, not the complement it looks like.
 
 Every repo carrying a composed `.claude/house-style.md` also carries a CI job
 that recomposes from source and fails when the committed artifact disagrees.
-That job checks out the composer from `ehrlinger/ehrlinger-personal`, and it
+That job checks out the composer from `ehrlinger/house-style`, and it
 **pins `ref: house-style-v1`** rather than taking the default branch.
 
 The pin is a tag, not a commit SHA, and the distinction matters. That repo
