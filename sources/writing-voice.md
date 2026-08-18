@@ -35,8 +35,12 @@ personality or a slightly imperfect sentence.
 
 ## Rules
 
-- Em-dashes: use sparingly. Native to the voice and honestly overused. Keep one
-  where it earns the pause; otherwise a comma, parentheses, or a full stop.
+- Em-dashes: Claude does not write them. Native to the voice and honestly
+  overused, so the drafting rule is a comma, parentheses, or a full stop. John
+  adds them back where he wants the pause. (Changed 2026-08-17 from "use
+  sparingly, keep one where it earns the pause", which conflicted with the
+  absolute rule in [[preferences]] and [[identity]]. Placing them is a judgment
+  about his own voice, so he makes it rather than delegating it.)
 - Ellipses: an informal-register habit (text, email). Keep them out of package docs.
 - Don't overstate. No overselling. Cut "enhanced", "powerful", "seamlessly",
   "robust" (as a brag), "comprehensive". State what the thing does, at its size.
