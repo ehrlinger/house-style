@@ -15,5 +15,6 @@ script_dir <- function() {
 
 here <- script_dir()
 source(file.path(here, "..", "R", "compose.R"))
+source(file.path(here, "..", "R", "status.R"))
 
 test_dir(file.path(here, "testthat"), reporter = "summary", stop_on_failure = TRUE)
