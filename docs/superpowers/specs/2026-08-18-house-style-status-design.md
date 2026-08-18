@@ -121,7 +121,7 @@ fault is unit-tested directly rather than inferred from a process exit.
 ## Output
 
 ```
-house-style-v1  345fae8  →  7 behind origin/main (75a68c3)
+house-style-v1  345fae8  ->  7 behind origin/main (75a68c3)
 sources: /Users/ehrlinj/Documents/ObsidianVault/memory
 
 REPO                    CONTENT          COMMITTED
