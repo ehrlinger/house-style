@@ -167,7 +167,7 @@ test_that("format_status survives an empty registry", {
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `Rscript -e 'testthat::test_local(filter = "status")'`
+Run: `Rscript tests/testthat.R`
 Expected: FAIL — `could not find function "status_exit_code"`.
 
 - [ ] **Step 3: Write the minimal implementation**
@@ -265,15 +265,29 @@ format_status <- function(rows, lag, sources) {
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `Rscript -e 'testthat::test_local(filter = "status")'`
+Run: `Rscript tests/testthat.R`
 Expected: PASS, 12 tests.
 
 If the summary-line assertions fail on an off-by-one index, note that a blank line precedes the summary; adjust the test's `out[length(out)]` expectations only if the blank line is genuinely intended (it is).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Wire R/status.R into the suite runner**
+
+`tests/testthat.R` sources only `R/compose.R`, so `test-status.R` cannot see
+the new functions when the suite runs. Add the second source line after the
+existing one:
+
+```r
+source(file.path(here, "..", "R", "compose.R"))
+source(file.path(here, "..", "R", "status.R"))
+```
+
+Run: `Rscript tests/testthat.R`
+Expected: every existing file still passes, plus a `status:` line.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add R/status.R tests/testthat/test-status.R
+git add R/status.R tests/testthat/test-status.R tests/testthat.R
 git commit -m "feat: add pure status formatting and exit-code rules"
 ```
 
@@ -413,7 +427,7 @@ test_that("artifact_git_state reports unknown-branch when the branch is NA", {
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `Rscript -e 'testthat::test_local(filter = "status")'`
+Run: `Rscript tests/testthat.R`
 Expected: FAIL — `could not find function "git_run"`.
 
 - [ ] **Step 3: Write the minimal implementation**
@@ -471,7 +485,7 @@ artifact_git_state <- function(path, branch) {
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `Rscript -e 'testthat::test_local(filter = "status")'`
+Run: `Rscript tests/testthat.R`
 Expected: PASS, 22 tests.
 
 - [ ] **Step 5: Commit**
@@ -548,7 +562,7 @@ test_that("a failed fetch degrades to fetched = FALSE without erroring", {
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `Rscript -e 'testthat::test_local(filter = "status")'`
+Run: `Rscript tests/testthat.R`
 Expected: FAIL — `could not find function "tag_lag"`.
 
 - [ ] **Step 3: Write the minimal implementation**
@@ -583,7 +597,7 @@ tag_lag <- function(repo_root, fetch = TRUE,
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `Rscript -e 'testthat::test_local(filter = "status")'`
+Run: `Rscript tests/testthat.R`
 Expected: PASS, 26 tests.
 
 - [ ] **Step 5: Commit**
