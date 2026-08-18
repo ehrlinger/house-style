@@ -219,6 +219,32 @@ test_that("artifact_git_state reports unknown-branch when the branch is NA", {
   expect_identical(artifact_git_state(dir, NA_character_), "unknown-branch")
 })
 
+test_that("artifact_git_state prefers origin/<branch> over the local branch", {
+  # Simulates the case Fix 2 exists for: the artifact is committed and pushed
+  # to origin/main, but the local main was never fetched forward. Checking
+  # the bare `branch` rev alone would find it absent -- a false alarm telling
+  # someone to commit a file that is already on origin.
+  dir <- new_repo()
+  writeLines("seed", file.path(dir, "seed.txt"))
+  git_in(dir, "add", "-A")
+  git_in(dir, "commit", "--quiet", "-m", "seed")
+
+  # Commit the artifact on a side branch, then point refs/remotes/origin/main
+  # at that commit directly -- standing in for "pushed to origin, not yet
+  # fetched into the local main" without a real remote or a second clone.
+  git_in(dir, "checkout", "--quiet", "-b", "pushed")
+  write_artifact(dir)
+  git_in(dir, "add", "-A")
+  git_in(dir, "commit", "--quiet", "-m", "artifact")
+  sha <- system2("git", c("-C", dir, "rev-parse", "pushed"),
+                 stdout = TRUE, stderr = FALSE)
+  git_in(dir, "update-ref", "refs/remotes/origin/main", sha)
+  git_in(dir, "checkout", "--quiet", "main")
+
+  expect_false(file.exists(file.path(dir, ARTIFACT_REL)))
+  expect_identical(artifact_git_state(dir, "main"), "committed")
+})
+
 test_that("tag_lag counts commits between the tag and the ref", {
   dir <- new_repo()
   writeLines("one", file.path(dir, "a.txt"))

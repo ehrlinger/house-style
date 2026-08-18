@@ -829,8 +829,13 @@ Before opening the PR:
 
 ```bash
 Rscript tests/testthat.R
+Rscript tools/gate.R
 ./tools/status.R --no-fetch; echo "[exit: $?]"
 ./tools/status.R; echo "[exit: $?]"
 ```
+
+`tools/gate.R` is a second runner of the same `tests/testthat/` directory,
+used by `bin/move-tag.sh` as the pre-tag gate; it must also source
+`R/status.R`, or every status test errors under it.
 
 Expected: suite green; both runs print the table; the fetching run's header lacks the `[as of last fetch]` suffix; both exit 2 while hvtiRbootstrap's artifact stays uncommitted.

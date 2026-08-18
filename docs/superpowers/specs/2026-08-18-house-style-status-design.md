@@ -1,7 +1,7 @@
 # Design: a portfolio status view for the house style
 
 **Date:** 2026-08-18
-**Status:** approved, not yet implemented
+**Status:** implemented
 **Scope:** one new R entry point, one new R source file, one new test file
 
 ## Problem
@@ -77,6 +77,9 @@ rather than a column.
 tree. The purpose of the column is to catch divergence between "green on my
 laptop" and "green in CI", and only the default branch sees that. A repo
 mid-onboarding will therefore report a problem, which is correct signal.
+This tool never fetches the governed repos, only this one (see Fetch
+behaviour, below), so the column reflects each clone's last-fetched state --
+a repo not fetched recently can still report a false alarm.
 
 ## Units
 
@@ -87,7 +90,7 @@ pluralisation and summary logic lives in the pure formatter.
 | Unit | Purity | Contract |
 |---|---|---|
 | `default_branch(path)` | impure | resolve `origin/HEAD` → `main`/`master`; `NA` if undeterminable |
-| `artifact_git_state(path, branch)` | impure | one of `committed`, `branch-only`, `untracked-only`, `absent`, `no-clone`, `not-a-repo` |
+| `artifact_git_state(path, branch)` | impure | one of `committed`, `branch-only`, `untracked-only`, `absent`, `no-clone`, `not-a-repo`, `unknown-branch` |
 | `tag_lag(repo_root, fetch)` | impure | list(behind, tag_sha, main_sha, fetched) |
 | `format_status(rows, lag, sources)` | pure | rows + lag → character vector to print |
 | `status_exit_code(rows)` | pure | rows → `0` or `2` |
@@ -103,14 +106,15 @@ The states are evaluated in this order, first match wins:
 |---|---|---|---|
 | 1 | `no-clone` | registry path does not exist | clone it |
 | 2 | `not-a-repo` | path exists, no `.git` | investigate |
-| 3 | `committed` | `git show <branch>:<artifact>` succeeds | none |
-| 4 | `branch-only` | absent from `<branch>`, but tracked on the current branch | merge the branch |
-| 5 | `untracked-only` | absent from `<branch>`, present in the worktree, untracked | commit it |
-| 6 | `absent` | absent from `<branch>` and from the worktree | compose, then commit |
+| 3 | `unknown-branch` | default branch could not be determined | investigate |
+| 4 | `committed` | `git show <branch>:<artifact>` succeeds | none |
+| 5 | `branch-only` | absent from `<branch>`, but tracked on the current branch | merge the branch |
+| 6 | `untracked-only` | absent from `<branch>`, present in the worktree, untracked | commit it |
+| 7 | `absent` | absent from `<branch>` and from the worktree | compose, then commit |
 
 Order matters for the case this column exists to catch. hvtiRbootstrap has an
 artifact on disk that is absent from `main` and untracked, so it must report
-`untracked-only` (rank 5) rather than `absent` (rank 6) — both are "not on
+`untracked-only` (rank 6) rather than `absent` (rank 7) — both are "not on
 main", but only the first tells you the file is already composed and merely
 needs committing. `branch-only` is ranked above both because a tracked file
 that is simply on an unmerged branch is a third, distinct situation.
@@ -157,13 +161,14 @@ to manage; an uncommitted artifact is a fault to fix.
 
 `tag_lag()` compares against `origin/main`, which is only as fresh as the
 last fetch. It therefore fetches by default (`git fetch --quiet origin main`),
-matching `bin/move-tag.sh:52`, so both commands agree about what "behind"
+matching `bin/move-tag.sh:53`, so both commands agree about what "behind"
 means.
 
-`--no-fetch` skips it. A fetch that fails (offline) warns, falls back to the
-local ref, and labels the header "as of last fetch" — it does not crash and
-does not change the exit code. Fetch-by-default is only safe if failing to
-fetch degrades to a labelled answer.
+`--no-fetch` skips it. A fetch that fails (offline) does not warn: it sets
+`fetched = FALSE` and falls back to the local ref, and the header gains the
+"[as of last fetch]" suffix — it does not crash and does not change the exit
+code. Fetch-by-default is only safe if failing to fetch degrades to a
+labelled answer.
 
 ## Failure modes
 
@@ -172,7 +177,7 @@ fetch degrades to a labelled answer.
 | Clone missing at the registry path | row `no-clone`, counts toward exit 2 |
 | Path exists, not a git repo | row `not-a-repo`, counts toward exit 2 |
 | Default branch undeterminable | row `unknown-branch`, counts toward exit 2 |
-| `fetch` fails | warn, use local ref, label header, exit code unaffected |
+| `fetch` fails | sets `fetched = FALSE`, uses local ref, labels header "[as of last fetch]", exit code unaffected |
 | Vault absent | composer falls back to the CI mirror; status reprints that warning prominently, because checking against the mirror answers a different question |
 | `git` not on PATH | exit 1 immediately |
 

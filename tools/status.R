@@ -32,8 +32,10 @@ if (!ok) {
 script_dir <- function() {
   args <- commandArgs(trailingOnly = FALSE)
   file_arg <- grep("^--file=", args, value = TRUE)
-  if (length(file_arg)) return(dirname(normalizePath(sub("^--file=", "", file_arg[1]))))
-  getwd()
+  if (!length(file_arg)) {
+    stop("Run this file with Rscript, not interactively.", call. = FALSE)
+  }
+  dirname(normalizePath(sub("^--file=", "", file_arg[1])))
 }
 
 HERE      <- script_dir()
@@ -87,15 +89,8 @@ sources <- tryCatch(read_sources(vault), error = function(e) {
   quit(status = 1L)
 })
 
-# artifact_git_state() reads the CONTENT source (`branch`) for the
-# `committed` state, but its `branch-only` / `untracked-only` / `absent`
-# states come from `git ls-files` and `file.exists()` against whatever is
-# currently checked out in entry$path -- not from the tree of `branch`
-# itself. That is intended: "branch-only" means "tracked on the branch the
-# developer happens to have checked out right now", which is exactly the
-# half-committed state this tool exists to surface. It does mean a row can
-# read differently depending on what a human left checked out on their
-# machine when this ran.
+# See the comment above artifact_git_state() in R/status.R for why
+# `committed` and the other states read from different trees.
 rows <- lapply(registry, function(entry) {
   res    <- check_repo(sources, entry)
   branch <- if (dir.exists(entry$path)) default_branch(entry$path) else NA_character_

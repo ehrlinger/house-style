@@ -29,6 +29,12 @@ GIT_LABEL <- c(
   "unknown-branch" = "NO (branch?)"
 )
 
+# Binds the label table to the states artifact_git_state() can actually
+# produce. Without this, an eighth state added there later would silently
+# render as NA in format_status() and exit 0 -- a fault nobody sees rather
+# than a fault that fails loudly at load time.
+stopifnot(setequal(names(GIT_LABEL), c("committed", FAULT_STATES)))
+
 # The single definition of "needs attention". status_exit_code() and
 # format_status() must never disagree about which repos are faulted, so they
 # share one rule rather than each carrying a copy of it.
@@ -110,9 +116,20 @@ default_branch <- function(path) {
   NA_character_
 }
 
-# Evaluated in the order given by the spec; first match wins. The ordering is
-# load-bearing at untracked-only vs absent: both are "not on the default
+# States are checked in this order, first match wins: no-clone, not-a-repo,
+# unknown-branch, committed, branch-only, untracked-only, absent. The ordering
+# is load-bearing at untracked-only vs absent: both are "not on the default
 # branch", but only the first says the file is already composed.
+#
+# `committed` is evaluated against the tree of `branch` (the remote-tracking
+# ref when available -- see the comment below). branch-only / untracked-only /
+# absent are evaluated against whatever is CURRENTLY CHECKED OUT in `path`,
+# via `git ls-files` and `file.exists()`, not against the tree of `branch`
+# itself. That is intended: "branch-only" means "tracked on the branch the
+# developer happens to have checked out right now", which is exactly the
+# half-committed state this tool exists to surface. It does mean a row can
+# read differently depending on what a human left checked out on their
+# machine when this ran.
 artifact_git_state <- function(path, branch) {
   if (!dir.exists(path)) return("no-clone")
 
@@ -121,7 +138,16 @@ artifact_git_state <- function(path, branch) {
 
   if (is.na(branch)) return("unknown-branch")
 
-  on_branch <- git_run(path, c("cat-file", "-e", paste0(branch, ":", ARTIFACT_REL)))
+  # Prefer the remote-tracking ref when it exists: it is the closest thing on
+  # disk to what the repo's CI actually checks out. Neither ref is fetched by
+  # this tool, so both can be stale -- this narrows the false-alarm window
+  # (a file committed and pushed reading as absent because the local branch
+  # was never updated here) rather than closing it.
+  remote_ref <- paste0("refs/remotes/origin/", branch)
+  has_remote <- git_run(path, c("rev-parse", "--verify", "--quiet", remote_ref))
+  rev <- if (has_remote$ok) paste0("origin/", branch) else branch
+
+  on_branch <- git_run(path, c("cat-file", "-e", paste0(rev, ":", ARTIFACT_REL)))
   if (on_branch$ok) return("committed")
 
   tracked <- git_run(path, c("ls-files", "--error-unmatch", ARTIFACT_REL))
