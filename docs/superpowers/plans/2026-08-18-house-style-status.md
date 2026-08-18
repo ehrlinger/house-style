@@ -45,6 +45,7 @@ These carry all the logic and need no git, so they are built first and in isolat
 - Consumes: nothing.
 - Produces:
   - `FAULT_STATES` — character vector of git states that count as faults.
+  - `needs_attention(rows)` → logical vector, one element per row; `logical(0)` for an empty registry. The single definition of "faulted", shared by the two functions below so they cannot disagree.
   - `status_exit_code(rows)` → integer `0L` or `2L`.
   - `format_status(rows, lag, sources)` → character vector, one element per output line.
   - A **row** is `list(name = <chr>, content_ok = <lgl>, content_reason = <chr>, git_state = <chr>)`. `content_reason` is `""` when `content_ok` is `TRUE`, else `"stale"` or `"missing"`.
@@ -86,10 +87,15 @@ test_that("every git fault state exits 2", {
 })
 
 test_that("tag lag is not a fault", {
-  # The whole point: a lagging tag is the normal state between a merge and a
-  # deliberate tag move. If it set exit 2 the command would be red almost
-  # always and would stop being read.
-  expect_identical(status_exit_code(list(row("a"))), 0L)
+  # status_exit_code() has no lag parameter, so lag cannot structurally reach
+  # it -- asserting on it there would prove nothing. The place lag and rows do
+  # meet is format_status(), and the observable property is that a behind tag
+  # with clean rows still prints no summary line. This fails if anyone later
+  # makes lag contribute to "needs attention".
+  out <- format_status(list(row("a"), row("b")), lag_behind, "/vault/memory")
+  expect_false(any(grepl("need attention", out, fixed = TRUE)))
+  expect_true(grepl("7 behind", out[1], fixed = TRUE))
+  expect_identical(status_exit_code(list(row("a"), row("b"))), 0L)
 })
 
 test_that("format_status renders a clean portfolio without a summary line", {
@@ -200,12 +206,19 @@ GIT_LABEL <- c(
   "unknown-branch" = "NO (branch?)"
 )
 
-status_exit_code <- function(rows) {
-  if (!length(rows)) return(0L)
-  bad <- vapply(rows, function(r) {
+# The single definition of "needs attention". status_exit_code() and
+# format_status() must never disagree about which repos are faulted, so they
+# share one rule rather than each carrying a copy of it.
+needs_attention <- function(rows) {
+  if (!length(rows)) return(logical(0))
+  vapply(rows, function(r) {
     !isTRUE(r$content_ok) || r$git_state %in% FAULT_STATES
   }, logical(1))
-  if (any(bad)) 2L else 0L
+}
+
+# any(logical(0)) is FALSE, so an empty registry exits 0 without a special case.
+status_exit_code <- function(rows) {
+  if (any(needs_attention(rows))) 2L else 0L
 }
 
 format_status <- function(rows, lag, sources) {
@@ -240,9 +253,7 @@ format_status <- function(rows, lag, sources) {
     out <- c(out, line(r$name, content, unname(GIT_LABEL[r$git_state])))
   }
 
-  bad <- vapply(rows, function(r) {
-    !isTRUE(r$content_ok) || r$git_state %in% FAULT_STATES
-  }, logical(1))
+  bad <- needs_attention(rows)
   if (any(bad)) {
     out <- c(out, "",
              sprintf("%d repo(s) need attention: %s",
