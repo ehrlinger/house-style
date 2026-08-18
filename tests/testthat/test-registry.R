@@ -1,7 +1,7 @@
 test_that("registry loads and validates every entry", {
   reg <- load_registry(testthat::test_path("..", "..", "repos.yml"))
 
-  expect_length(reg, 9L)
+  expect_length(reg, 10L)
   expect_equal(reg[[1]]$name, "hvtiPlotR")
   expect_equal(reg[[1]]$profile, "package-internal")
   expect_equal(reg[[1]]$default_persona, "a")

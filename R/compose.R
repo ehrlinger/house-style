@@ -78,7 +78,7 @@ load_registry <- function(path) {
 # `sources/` is a mirror of the vault, and CI has no vault to compare it
 # against. The manifest is the one check a runner can actually perform: it
 # pins the bytes of each mirrored file, so a hand edit to `sources/` reddens
-# CI instead of propagating to nine repositories as a phantom drift report.
+# CI instead of propagating to ten repositories as a phantom drift report.
 #
 # It does NOT detect vault drift -- nothing running without the vault can.
 # That check lives in test-mirror.R and in the pre-tag gate.

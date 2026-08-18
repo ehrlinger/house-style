@@ -3,7 +3,7 @@
 The documentation and CI standard for the HVTI CORR R package portfolio, plus
 the composer that distributes it.
 
-Nine repositories share an author, an institution and a documentation
+Ten repositories share an author, an institution and a documentation
 philosophy. This repo holds the rules they share and the tool that keeps each
 one's copy current.
 
@@ -27,7 +27,7 @@ one's copy current.
 The convention this replaces was "keep a synced copy in each repo." Both
 repositories that adopted it ended up with a stale document, neither noticed:
 one was missing two whole sections, another was three weeks behind and had lost
-an entire reader persona. A hand-maintained copy in nine places is nine chances
+an entire reader persona. A hand-maintained copy in ten places is ten chances
 to drift silently.
 
 So the artifact is generated. Each repo commits a `.claude/house-style.md` with
@@ -79,7 +79,7 @@ inside the mechanism that enforces it.
 Consumer repositories pin their drift-check job to the tag `house-style-v1`
 rather than to `main`.
 
-Not `main`, because an in-progress commit here would redden nine repositories at
+Not `main`, because an in-progress commit here would redden ten repositories at
 once. Not a commit SHA either, because this repo carries the *reference sources*
 as well as the tool — a frozen ref would freeze what the check compares against,
 and the check could never detect drift again.
@@ -94,7 +94,7 @@ Advancing it is what makes every repository report drift until it recomposes.
 That is the intended signal, not a failure.
 
 Use the script rather than `git tag -f` directly. Moving the tag is the moment
-stale sources propagate to nine repositories, and it is the only moment in the
+stale sources propagate to ten repositories, and it is the only moment in the
 lifecycle guaranteed to happen on a machine with the vault — so it is where the
 mirror check is both possible and worth blocking on. The script refuses on a
 dirty tree, on a commit that is not an ancestor of `origin/main`, on any test
