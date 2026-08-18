@@ -1,4 +1,4 @@
-# The composer is load-bearing for nine repositories: each pins this repo at
+# The composer is load-bearing for ten repositories: each pins this repo at
 # house-style-v1 and runs its drift check against these sources. A break here
 # reddens all of them, so the suite gates every change.
 name: test
