@@ -20,6 +20,7 @@ script_dir <- function() {
 
 HERE <- script_dir()
 source(file.path(HERE, "..", "R", "compose.R"))
+source(file.path(HERE, "..", "R", "status.R"))
 
 res <- as.data.frame(test_dir(
   file.path(HERE, "..", "tests", "testthat"),

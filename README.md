@@ -51,6 +51,16 @@ Sources are read from `~/Documents/ObsidianVault/memory/` when that exists, and
 otherwise from `sources/` in this repo — which is what CI uses, since a runner
 has no vault. Every run prints which directory it read.
 
+`tools/status.R` answers a wider question than `--check --all` does. The check
+compares each artifact against the vault, reading the working tree; it cannot
+see whether that artifact is committed on the default branch —
+`origin/<branch>` when the clone has it, otherwise the local branch — so a
+composed-but-uncommitted file passes locally and fails in CI. The
+status view adds that column, plus a header line showing how far
+`house-style-v1` trails `origin/main`. It exits 2 when a repo needs attention
+and 0 otherwise — a lagging tag is reported but never counted as a failure,
+since the tag is meant to lag between a merge and a deliberate move.
+
 ## Profiles
 
 A repository composes only the parts that apply to it.
