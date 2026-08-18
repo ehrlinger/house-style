@@ -84,3 +84,50 @@ format_status <- function(rows, lag, sources) {
   }
   out
 }
+
+# Runs git in `dir` and returns list(ok, out). A non-zero exit is data here,
+# not an error: "this path is not on that branch" is reported by git the same
+# way a real failure is, and the caller tells them apart by which command it
+# ran. Signalling would force every call site into tryCatch().
+git_run <- function(dir, args) {
+  out <- suppressWarnings(
+    system2("git", c("-C", dir, args), stdout = TRUE, stderr = FALSE)
+  )
+  status <- attr(out, "status")
+  list(ok = is.null(status) || identical(as.integer(status), 0L),
+       out = as.character(out))
+}
+
+default_branch <- function(path) {
+  head_ref <- git_run(path, c("symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"))
+  if (head_ref$ok && length(head_ref$out)) {
+    return(sub("^refs/remotes/origin/", "", head_ref$out[1]))
+  }
+  for (candidate in c("main", "master")) {
+    probe <- git_run(path, c("rev-parse", "--verify", "--quiet", candidate))
+    if (probe$ok && length(probe$out)) return(candidate)
+  }
+  NA_character_
+}
+
+# Evaluated in the order given by the spec; first match wins. The ordering is
+# load-bearing at untracked-only vs absent: both are "not on the default
+# branch", but only the first says the file is already composed.
+artifact_git_state <- function(path, branch) {
+  if (!dir.exists(path)) return("no-clone")
+
+  inside <- git_run(path, c("rev-parse", "--is-inside-work-tree"))
+  if (!inside$ok) return("not-a-repo")
+
+  if (is.na(branch)) return("unknown-branch")
+
+  on_branch <- git_run(path, c("cat-file", "-e", paste0(branch, ":", ARTIFACT_REL)))
+  if (on_branch$ok) return("committed")
+
+  tracked <- git_run(path, c("ls-files", "--error-unmatch", ARTIFACT_REL))
+  if (tracked$ok) return("branch-only")
+
+  if (file.exists(file.path(path, ARTIFACT_REL))) return("untracked-only")
+
+  "absent"
+}
