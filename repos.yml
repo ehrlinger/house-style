@@ -27,6 +27,11 @@ repos:
     profile: package-internal
     default_persona: a
     secondary_personas: [c]
+  - name: hvtiRbootstrap
+    path: ~/Documents/GitHub/hvtiRbootstrap
+    profile: package-internal
+    default_persona: a
+    secondary_personas: [c]
   - name: hvtiBoostmtree
     path: ~/Documents/GitHub/hvtiBoostmtree
     profile: package-internal
