@@ -218,3 +218,50 @@ test_that("artifact_git_state reports unknown-branch when the branch is NA", {
   dir <- new_repo()
   expect_identical(artifact_git_state(dir, NA_character_), "unknown-branch")
 })
+
+test_that("tag_lag counts commits between the tag and the ref", {
+  dir <- new_repo()
+  writeLines("one", file.path(dir, "a.txt"))
+  git_in(dir, "add", "-A"); git_in(dir, "commit", "--quiet", "-m", "one")
+  git_in(dir, "tag", "house-style-v1")
+  writeLines("two", file.path(dir, "b.txt"))
+  git_in(dir, "add", "-A"); git_in(dir, "commit", "--quiet", "-m", "two")
+
+  # No remote in a temp repo, so compare against the local branch instead.
+  lag <- tag_lag(dir, fetch = FALSE, remote_ref = "main")
+  expect_identical(lag$behind, 1L)
+  expect_false(lag$fetched)
+  expect_true(nzchar(lag$tag_sha))
+})
+
+test_that("tag_lag reports zero when the tag is current", {
+  dir <- new_repo()
+  writeLines("one", file.path(dir, "a.txt"))
+  git_in(dir, "add", "-A"); git_in(dir, "commit", "--quiet", "-m", "one")
+  git_in(dir, "tag", "house-style-v1")
+
+  lag <- tag_lag(dir, fetch = FALSE, remote_ref = "main")
+  expect_identical(lag$behind, 0L)
+})
+
+test_that("tag_lag returns NA rather than failing when the tag is absent", {
+  dir <- new_repo()
+  writeLines("one", file.path(dir, "a.txt"))
+  git_in(dir, "add", "-A"); git_in(dir, "commit", "--quiet", "-m", "one")
+
+  lag <- tag_lag(dir, fetch = FALSE, remote_ref = "main")
+  expect_true(is.na(lag$behind))
+  expect_true(is.na(lag$tag_sha))
+})
+
+test_that("a failed fetch degrades to fetched = FALSE without erroring", {
+  # No remote configured, so the fetch cannot succeed. It must not signal.
+  dir <- new_repo()
+  writeLines("one", file.path(dir, "a.txt"))
+  git_in(dir, "add", "-A"); git_in(dir, "commit", "--quiet", "-m", "one")
+  git_in(dir, "tag", "house-style-v1")
+
+  lag <- expect_silent(tag_lag(dir, fetch = TRUE, remote_ref = "main"))
+  expect_false(lag$fetched)
+  expect_identical(lag$behind, 0L)
+})

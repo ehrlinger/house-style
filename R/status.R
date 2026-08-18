@@ -131,3 +131,27 @@ artifact_git_state <- function(path, branch) {
 
   "absent"
 }
+
+# Fetches by default so `behind` means the same thing here as it does in
+# bin/move-tag.sh, which fetches before its ancestry check. A fetch that fails
+# (offline, no remote) is not an error: it degrades to the local ref with
+# fetched = FALSE, which format_status() labels "[as of last fetch]".
+tag_lag <- function(repo_root, fetch = TRUE,
+                    tag = "house-style-v1", remote_ref = "origin/main") {
+  fetched <- FALSE
+  if (isTRUE(fetch)) {
+    fetched <- git_run(repo_root, c("fetch", "--quiet", "origin", "main"))$ok
+  }
+
+  first <- function(res) if (res$ok && length(res$out)) res$out[1] else NA_character_
+
+  tag_sha  <- first(git_run(repo_root, c("rev-parse", "--short", tag)))
+  main_sha <- first(git_run(repo_root, c("rev-parse", "--short", remote_ref)))
+  count    <- first(git_run(repo_root,
+                            c("rev-list", "--count", paste0(tag, "..", remote_ref))))
+
+  list(behind   = if (is.na(count)) NA_integer_ else as.integer(count),
+       tag_sha  = tag_sha,
+       main_sha = main_sha,
+       fetched  = fetched)
+}
