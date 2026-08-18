@@ -282,6 +282,9 @@ test_that("tag_lag returns NA rather than failing when the tag is absent", {
 
 test_that("a failed fetch degrades to fetched = FALSE without erroring", {
   # No remote configured, so the fetch cannot succeed. It must not signal.
+  # remote_ref = "main" does not match ^origin/(.+)$, so tag_lag() does not
+  # even attempt a fetch here -- fetched = FALSE for that reason now, not
+  # because a fetch was attempted and failed.
   dir <- new_repo()
   writeLines("one", file.path(dir, "a.txt"))
   git_in(dir, "add", "-A"); git_in(dir, "commit", "--quiet", "-m", "one")
@@ -290,4 +293,39 @@ test_that("a failed fetch degrades to fetched = FALSE without erroring", {
   lag <- expect_silent(tag_lag(dir, fetch = TRUE, remote_ref = "main"))
   expect_false(lag$fetched)
   expect_identical(lag$behind, 0L)
+})
+
+test_that("tag_lag derives the fetch from remote_ref -- origin/main with no remote configured", {
+  # remote_ref = "origin/main" DOES match ^origin/(.+)$, so tag_lag() now
+  # attempts `git fetch origin main`. With no remote configured that attempt
+  # fails, and must still degrade to fetched = FALSE without erroring, the
+  # same as any other offline/no-remote case.
+  dir <- new_repo()
+  writeLines("one", file.path(dir, "a.txt"))
+  git_in(dir, "add", "-A"); git_in(dir, "commit", "--quiet", "-m", "one")
+  git_in(dir, "tag", "house-style-v1")
+
+  lag <- expect_silent(tag_lag(dir, fetch = TRUE, remote_ref = "origin/main"))
+  expect_false(lag$fetched)
+})
+
+test_that("git_run does not signal when the git binary cannot be launched", {
+  # Making PATH empty is what actually makes git unfindable in this
+  # environment -- verified separately that Sys.which("git") returns "" and
+  # that system2() raises an R error (not a warning) when the binary is
+  # missing, which suppressWarnings() alone cannot catch. This is exactly the
+  # failure mode Fix 1's tryCatch exists for.
+  withr::with_path(new = character(0), action = "replace", {
+    expect_identical(Sys.which("git"), c(git = ""))
+    res <- expect_silent(git_run(".", c("status")))
+    expect_false(res$ok)
+    expect_identical(res$out, character(0))
+  })
+})
+
+test_that("an unknown git_state errors loudly from needs_attention and format_status", {
+  rows <- list(row("a", git_state = "quantum-superposition"))
+  expect_error(needs_attention(rows), "quantum-superposition")
+  expect_error(needs_attention(rows), "a")
+  expect_error(format_status(rows, lag_clean, "/vault/memory"), "quantum-superposition")
 })

@@ -29,16 +29,34 @@ GIT_LABEL <- c(
   "unknown-branch" = "NO (branch?)"
 )
 
-# Binds the label table to the states artifact_git_state() can actually
-# produce. Without this, an eighth state added there later would silently
-# render as NA in format_status() and exit 0 -- a fault nobody sees rather
-# than a fault that fails loudly at load time.
+# Checks that the label table and the fault list agree with each other --
+# every fault state has a label and every label is either "committed" or a
+# fault. This does NOT check that either constant matches what
+# artifact_git_state() can actually produce; that binding is enforced at
+# runtime by check_known_git_states() below, on the rows as they arrive.
 stopifnot(setequal(names(GIT_LABEL), c("committed", FAULT_STATES)))
+
+# Guards the boundary where git states actually arrive, which the stopifnot()
+# above cannot do: comparing two constants to each other proves nothing about
+# what artifact_git_state() produces at runtime. An unfamiliar state is a
+# programming error (a new state added there without updating GIT_LABEL /
+# FAULT_STATES here), not a data condition, so it must fail loudly rather
+# than render as NA in format_status() and quietly exit 0.
+check_known_git_states <- function(rows) {
+  for (r in rows) {
+    if (!(r$git_state %in% names(GIT_LABEL))) {
+      stop(sprintf("unknown git_state %s for repo %s", r$git_state, r$name),
+           call. = FALSE)
+    }
+  }
+  invisible(NULL)
+}
 
 # The single definition of "needs attention". status_exit_code() and
 # format_status() must never disagree about which repos are faulted, so they
 # share one rule rather than each carrying a copy of it.
 needs_attention <- function(rows) {
+  check_known_git_states(rows)
   if (!length(rows)) return(logical(0))
   vapply(rows, function(r) {
     !isTRUE(r$content_ok) || r$git_state %in% FAULT_STATES
@@ -51,6 +69,11 @@ status_exit_code <- function(rows) {
 }
 
 format_status <- function(rows, lag, sources) {
+  # Must run before any row is rendered below -- GIT_LABEL[r$git_state] would
+  # otherwise turn an unknown state into a silent NA in the printed table,
+  # and `bad` (computed later) would not count it as a fault either.
+  check_known_git_states(rows)
+
   names_col <- vapply(rows, function(r) r$name, character(1))
   w <- max(c(nchar("REPO"), nchar(names_col)))
 
@@ -94,11 +117,20 @@ format_status <- function(rows, lag, sources) {
 # Runs git in `dir` and returns list(ok, out). A non-zero exit is data here,
 # not an error: "this path is not on that branch" is reported by git the same
 # way a real failure is, and the caller tells them apart by which command it
-# ran. Signalling would force every call site into tryCatch().
+# ran. The tryCatch is what makes "never signals" actually true: system2()
+# raises an R error (not a warning, so suppressWarnings() cannot catch it) when
+# the git binary itself cannot be launched, as opposed to git launching and
+# exiting non-zero. Catching that here means every call site can tell "git
+# said no" from "git could not run" purely by which command it issued,
+# without needing its own tryCatch.
 git_run <- function(dir, args) {
-  out <- suppressWarnings(
-    system2("git", c("-C", dir, args), stdout = TRUE, stderr = FALSE)
+  out <- tryCatch(
+    suppressWarnings(
+      system2("git", c("-C", dir, args), stdout = TRUE, stderr = FALSE)
+    ),
+    error = function(e) NULL
   )
+  if (is.null(out)) return(list(ok = FALSE, out = character(0)))
   status <- attr(out, "status")
   list(ok = is.null(status) || identical(as.integer(status), 0L),
        out = as.character(out))
@@ -164,9 +196,14 @@ artifact_git_state <- function(path, branch) {
 # fetched = FALSE, which format_status() labels "[as of last fetch]".
 tag_lag <- function(repo_root, fetch = TRUE,
                     tag = "house-style-v1", remote_ref = "origin/main") {
+  # The fetch must pull the same ref `remote_ref` names, or `behind` ends up
+  # computed against something other than what was actually fetched -- e.g.
+  # fetching origin/main while comparing against a stale origin/release
+  # would silently under-report how far the tag trails.
   fetched <- FALSE
-  if (isTRUE(fetch)) {
-    fetched <- git_run(repo_root, c("fetch", "--quiet", "origin", "main"))$ok
+  branch_match <- regmatches(remote_ref, regexec("^origin/(.+)$", remote_ref))[[1]]
+  if (isTRUE(fetch) && length(branch_match) == 2L) {
+    fetched <- git_run(repo_root, c("fetch", "--quiet", "origin", branch_match[2]))$ok
   }
 
   first <- function(res) if (res$ok && length(res$out)) res$out[1] else NA_character_
