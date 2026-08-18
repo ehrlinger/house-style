@@ -73,7 +73,7 @@ Rscript tools/gate.R \
   || fail "the gate did not pass. $TAG stays where it is.
          Nothing propagates until sources/ is verified against the vault."
 
-# --- Move it ---------------------------------------------------------------
+# --- Confirm ---------------------------------------------------------------
 
 echo ""
 echo "About to move $TAG:"
@@ -92,9 +92,39 @@ if [ "$assume_yes" -ne 1 ]; then
   esac
 fi
 
+# --- The immutable record, BEFORE the moving pin ---------------------------
+#
+# $TAG is force-moved, which discards the previous tag object and with it the
+# note explaining why the standard last changed. main keeps the content history,
+# but nothing keeps the answer to "when did this propagate, and why", and that
+# is the moment this script exists to mark.
+#
+# So cut a dated tag that is never moved. It costs one ref, it makes any past
+# check reproducible by pinning ref: standard-YYYY-MM-DD, and it leaves the
+# drift-detection argument for a moving $TAG untouched, because $TAG still
+# moves.
+#
+# Created first on purpose. If the archive fails we have not propagated yet; if
+# it were created after, a failure would lose the record of a move that had
+# already happened.
+existing_archive="$(git tag --points-at "$sha" | grep '^standard-' | head -1 || true)"
+if [ -n "$existing_archive" ]; then
+  echo ""
+  echo "Archive tag $existing_archive already points at $(git rev-parse --short "$sha"); reusing it."
+  archive="$existing_archive"
+else
+  archive="$(git tag -l | "$REPO_ROOT/bin/archive-tag-name.sh" "$(git log -1 --format=%cs "$sha")")"
+  git tag -a "$archive" "$sha" -m "$message"
+  git push origin "$archive"
+  echo ""
+  echo "Archived this state as $archive (immutable; never moved)."
+fi
+
+# --- Move it ---------------------------------------------------------------
+
 git tag -f -a "$TAG" "$sha" -m "$message"
 git push -f origin "$TAG"
 
 echo ""
-echo "$TAG now at $(git rev-parse --short "$sha")."
+echo "$TAG now at $(git rev-parse --short "$sha"), archived as $archive."
 echo "Governed repos will report drift on their next run until they recompose."
