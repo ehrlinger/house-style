@@ -6,7 +6,7 @@
 # vault-present mirror check cannot run on a runner. This entry point is for
 # the one moment where that tolerance is wrong: just before house-style-v1
 # moves, on a machine that does have the vault. There, "the mirror check did
-# not run" and "the mirror is stale" have the same consequence -- nine repos
+# not run" and "the mirror is stale" have the same consequence -- ten repos
 # recompose against sources nobody verified -- so they get the same exit code.
 
 suppressMessages(library(testthat))
