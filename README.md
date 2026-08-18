@@ -17,6 +17,7 @@ one's copy current.
 | `R/compose.R` | The composition functions |
 | `repos.yml` | The registry — the only place the governed repositories are enumerated |
 | `bin/move-tag.sh` | The only supported way to advance `house-style-v1` — gates on a verified mirror |
+| `bin/archive-tag-name.sh` | Names the immutable `standard-<date>` tag each move cuts; split out so it is testable |
 | `tools/gate.R` | Runs the suite in gate mode, where a skipped test counts as a failure |
 | `tools/write-manifest.R` | Regenerates `sources/MANIFEST` after a vault sync |
 | `tests/` | 148 expectations covering composition, drift detection and mirror freshness |
@@ -115,6 +116,26 @@ current — that is a limit, not an oversight. What CI can do is pin the bytes
 and say plainly that it did not check the rest: the test job emits a warning
 annotation and a job-summary note whenever the vault was absent. Previously it
 printed a skip, which reads like a pass. See #8 for what that cost.
+
+### What survives a move
+
+`git tag -f` discards the previous tag object, and with it the note saying why
+the standard last changed. `main` keeps the *content* history, but nothing kept
+the answer to "when did this propagate, and why", which is the one moment this
+whole mechanism exists to mark.
+
+So every move also cuts an immutable dated tag, `standard-YYYY-MM-DD`, at the
+same commit and with the same message. It is never moved. Two moves against
+commits sharing a date get `-2`, `-3` and so on, because an archive tag that
+gets overwritten is not an archive.
+
+It is created *before* `house-style-v1` moves. If the archive fails nothing has
+propagated yet; the other order would lose the record of a move that had already
+happened.
+
+That gives you a reproducible pin for any past state, `ref: standard-2026-08-17`,
+without weakening the argument below: `house-style-v1` still moves, so the drift
+check still detects drift.
 
 A run is therefore reproducible only until the tag next moves — weaker than a
 SHA, stronger than a branch. The trade holds because moves are deliberate and
