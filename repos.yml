@@ -12,7 +12,7 @@ repos:
     profile: package-internal
     default_persona: a
     secondary_personas: [c]
-  - name: hvtiPropensityScores
+  - name: hvtiRpropensity
     path: ~/Documents/GitHub/hvtiPropensityScores
     profile: package-internal
     default_persona: a
