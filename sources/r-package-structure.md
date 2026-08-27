@@ -93,8 +93,8 @@ repostatus is a static shield with no infrastructure behind it at all, and the
 version badge just reads `DESCRIPTION`, so neither has an excuse.
 
 Where a badge is genuinely missing because the underlying thing is missing,
-the fix is to add the workflow, not to drop the badge. Only hvtiRdatasets is
-in that position, lacking lint, pkgdown, and test-coverage entirely.
+the fix is to add the workflow, not to drop the badge. No governed repo is in
+that position today; every one carries lint, pkgdown and test-coverage.
 
 **Required for the `package-cran` profile**, after the six:
 
@@ -585,7 +585,8 @@ gh api repos/ehrlinger/<repo>/rulesets \
 
 ## Naming
 
-A package is named `hvtiR<domain>`. The `hvtiR` prefix is literal, and is also
+An HVTI package is named `hvtiR<domain>`, subject to the two exceptions below.
+The `hvtiR` prefix is literal, and is also
 the umbrella package's own name, so the brand string and the namespace prefix
 are one thing. `<domain>` is lowercase, noun-shaped, and may be a compound word
 (`lifetables`, `databuild`).
@@ -596,9 +597,10 @@ what the pkgdown URL is built from. A Quarto book takes the bare `hvti` prefix
 instead (`hvtiGraphics`), because the `R` in `hvtiR` means "an R package you
 can `library()`".
 
-A package published on CRAN keeps its published name; renaming it orphans
-installs and breaks citations. That protects the *package* name only — a CRAN
-package's repository still takes the package's name.
+A package published on CRAN keeps its published name: renaming it orphans the
+installations already out there and breaks published citations. That protects
+the *package* name only — a CRAN package's repository still takes the package's
+name.
 
 `hvtiPlotR` is the one grandfathered exception, and the reason is recorded so a
 later sweep does not "fix" it: it is the most-used package in the family and
