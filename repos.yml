@@ -22,8 +22,8 @@ repos:
     profile: package-internal
     default_persona: a
     secondary_personas: [c]
-  - name: hvtiRdatasets
-    path: ~/Documents/GitHub/hvtiRdatasets
+  - name: hvtiRdatabuild
+    path: ~/Documents/GitHub/hvtiRdatabuild
     profile: package-internal
     default_persona: a
     secondary_personas: [c]
