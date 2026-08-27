@@ -11,7 +11,7 @@ assumptions about purpose and constraints.
   (varPro), built on randomForestSRC.
 - **temporal_hazard** — additive (Blackstone, Naftel, and Turner, 1986) hazard
   models in pure R.
-- **hvti_graphics** — this recipes book, which ties the three together into a
+- **hvtiGraphics** — this recipes book, which ties the three together into a
   house style for clinical figures.
 
 ## Purpose
