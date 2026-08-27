@@ -32,6 +32,21 @@ repos:
     profile: package-internal
     default_persona: a
     secondary_personas: [c]
+  - name: hvtiRtemplates
+    path: ~/Documents/GitHub/hvtiRtemplates
+    profile: package-internal
+    default_persona: a
+    secondary_personas: [c]
+  - name: hvtiRlifetables
+    path: ~/Documents/GitHub/hvtiRlifetables
+    profile: package-internal
+    default_persona: a
+    secondary_personas: [c]
+  - name: hvtiR
+    path: ~/Documents/GitHub/hvtiR
+    profile: package-internal
+    default_persona: a
+    secondary_personas: [c]
   - name: hvtiBoostmtree
     path: ~/Documents/GitHub/hvtiBoostmtree
     profile: package-internal
