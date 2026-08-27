@@ -6,11 +6,11 @@ and versioning. `writing-voice.md` and `writing-reader-profile.md` govern how
 you write; this one governs what has to be there and in what order. It is
 written for the person about to write or audit a package README — most often
 the biostatistician who already knows R and is deciding whether this
-package's front door matches the other seven.
+package's front door matches its siblings.
 
-Derived from `hvtiPlotR`, the de-facto template across the eight-package
+Derived from `hvtiPlotR`, the de-facto template across the governed
 portfolio, with a small number of deliberate improvements it does not yet
-itself reflect. Recorded so the other seven — and hvtiPlotR, on those few
+itself reflect. Recorded so its siblings — and hvtiPlotR, on those few
 points — can be brought into line with it rather than the rules drifting to
 match whichever package they came from.
 
@@ -84,9 +84,9 @@ Six are required of every package, in this order:
 5. **GitHub r-package version**
 6. **lint**
 
-These are required because they're already true. Seven of the eight packages
-run the lint, pkgdown, and test-coverage workflows today; what's missing is
-mostly the badge, not the machinery. A workflow running green that the README
+These are required because they're already true. Every governed package runs
+the lint, pkgdown, and test-coverage workflows today; what's missing is
+sometimes the badge, not the machinery. A workflow running green that the README
 never mentions is coverage nobody can see, which is its own small version of
 the staleness problem — the check works, and the reader has no way to know.
 repostatus is a static shield with no infrastructure behind it at all, and the
