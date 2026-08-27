@@ -1,7 +1,16 @@
 test_that("registry loads and validates every entry", {
   reg <- load_registry(testthat::test_path("..", "..", "repos.yml"))
 
-  expect_length(reg, 10L)
+  # Deliberately not a fixed count: the family grows, and a magic number here
+  # fails on every addition without saying anything about correctness. What
+  # matters is that every entry carries the fields the composer reads.
+  expect_gt(length(reg), 0L)
+  for (field in c("name", "path", "profile", "default_persona")) {
+    present <- vapply(reg, function(e) is.character(e[[field]]) &&
+                        length(e[[field]]) == 1L && nzchar(e[[field]]), logical(1))
+    expect_true(all(present), info = paste("missing or blank:", field))
+  }
+
   expect_equal(reg[[1]]$name, "hvtiPlotR")
   expect_equal(reg[[1]]$profile, "package-internal")
   expect_equal(reg[[1]]$default_persona, "a")
