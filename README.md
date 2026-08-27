@@ -45,7 +45,14 @@ Rscript compose-house-style.R --repo hvtiPlotR
 Rscript compose-house-style.R --check --all
 ```
 
-Exit codes: **0** clean, **1** usage error or missing source, **2** drift.
+Exit codes: **0** clean, **1** usage error, missing source, or a registry path
+that is not a directory on disk, **2** drift.
+
+The last of those is deliberately not drift. A `path:` pointing at a clone that
+was renamed or moved cannot be checked or composed at all, and recomposing
+cannot fix it — so it fails with the other configuration errors, naming every
+broken entry in one pass, rather than being reported as an artifact that is out
+of date with the vault.
 
 Sources are read from `~/Documents/ObsidianVault/memory/` when that exists, and
 otherwise from `sources/` in this repo — which is what CI uses, since a runner

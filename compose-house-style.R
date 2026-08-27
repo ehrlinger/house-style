@@ -13,7 +13,8 @@
 #   compose-house-style.R --check --all             # verify all (CI mode)
 #   compose-house-style.R --vault <dir>             # override the vault path
 #
-# Exit codes: 0 = clean, 1 = usage or missing source, 2 = drift detected.
+# Exit codes: 0 = clean, 1 = usage, missing source, or a registry path that is
+#             not a directory, 2 = drift detected.
 
 suppressWarnings(suppressMessages({
   ok <- requireNamespace("yaml", quietly = TRUE) &&
@@ -140,6 +141,26 @@ if (!do_all) {
   registry <- hit
 }
 
+# Stat every selected path before reading a source or composing a byte. A
+# registry entry pointing at a directory that is not there cannot be checked
+# or written, and it is not drift -- reporting it as "out of date" names a
+# remedy (recompose) that cannot fix a moved clone. Exit 1 with the other hard
+# configuration errors rather than 2 with the drift bucket.
+#
+# Every broken entry is named in one pass, not one per run: the Wave 2 renames
+# staled three at once, and a run that stops at the first would have taken
+# three edit-and-rerun cycles to reveal them all.
+path_problems <- lapply(registry, repo_path_problem)
+broken <- which(!vapply(path_problems, is.null, logical(1)))
+
+if (length(broken)) {
+  for (i in broken) {
+    cat(format_path_problem(registry[[i]], path_problems[[i]]), file = stderr())
+  }
+  cat(PATH_PROBLEM_HINT, file = stderr())
+  quit(status = 1L)
+}
+
 sources <- tryCatch(read_sources(vault), error = function(e) {
   cat("ERROR: ", conditionMessage(e), "\n", sep = "", file = stderr())
   quit(status = 1L)
@@ -148,16 +169,6 @@ sources <- tryCatch(read_sources(vault), error = function(e) {
 drift <- character(0)
 
 for (entry in registry) {
-  if (!dir.exists(entry$path)) {
-    if (do_check) {
-      cat("DRIFT ", entry$name, " (path not found: ", entry$path, ")\n", sep = "")
-      drift <- c(drift, entry$name)
-    } else {
-      cat("SKIP  ", entry$name, " (path not found: ", entry$path, ")\n", sep = "")
-    }
-    next
-  }
-
   if (do_check) {
     res <- check_repo(sources, entry)
     if (res$ok) {

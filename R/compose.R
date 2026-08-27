@@ -73,6 +73,41 @@ load_registry <- function(path) {
   })
 }
 
+# --- Registry paths --------------------------------------------------------
+#
+# A registry entry whose `path:` is not a directory on disk is a configuration
+# error, not drift. The distinction is load-bearing because the two have
+# opposite remedies: drift is fixed by recomposing, a moved clone is fixed by
+# editing repos.yml. Folding the second into the first sends the reader to a
+# remedy that provably cannot work -- which is what happened when three clones
+# were renamed at once and all three reported as "out of date with the vault
+# sources".
+#
+# Returns NULL when the path is usable, so callers can Filter() on it.
+
+repo_path_problem <- function(entry) {
+  if (dir.exists(entry$path)) return(NULL)
+  if (file.exists(entry$path)) "not-a-directory" else "absent"
+}
+
+# The remedy, printed once however many entries are broken. Kept next to the
+# classifier so the two cannot drift apart.
+PATH_PROBLEM_HINT <- paste0(
+  "A registry path that is not a directory is a configuration error, not drift:",
+  " nothing can be checked or composed there, and recomposing cannot fix it.",
+  " Usually the local clone was renamed, moved, or never made. Update the",
+  " entry's 'path:' in repos.yml, or put the clone where it points.\n"
+)
+
+format_path_problem <- function(entry, problem) {
+  what <- switch(problem,
+    "absent"          = "no directory at ",
+    "not-a-directory" = "not a directory: ",
+    stop("Unknown path problem '", problem, "'.", call. = FALSE)
+  )
+  paste0("ERROR: ", entry$name, ": ", what, entry$path, "\n")
+}
+
 # --- Source manifest -------------------------------------------------------
 #
 # `sources/` is a mirror of the vault, and CI has no vault to compare it
