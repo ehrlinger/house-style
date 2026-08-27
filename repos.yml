@@ -13,7 +13,7 @@ repos:
     default_persona: a
     secondary_personas: [c]
   - name: hvtiRpropensity
-    path: ~/Documents/GitHub/hvtiPropensityScores
+    path: ~/Documents/GitHub/hvtiRpropensity
     profile: package-internal
     default_persona: a
     secondary_personas: [c]
@@ -43,12 +43,12 @@ repos:
     default_persona: d
     secondary_personas: []
   - name: TemporalHazard
-    path: ~/Documents/GitHub/temporal_hazard
+    path: ~/Documents/GitHub/TemporalHazard
     profile: package-cran
     default_persona: d
     secondary_personas: [c]
-  - name: hvti_graphics
-    path: ~/Documents/GitHub/hvti_graphics
+  - name: hvtiGraphics
+    path: ~/Documents/GitHub/hvtiGraphics
     profile: book
     default_persona: a
     secondary_personas: [b]
