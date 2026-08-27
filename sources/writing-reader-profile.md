@@ -2,7 +2,7 @@
 
 A menu of selectable audiences for the `ehrlinger-writing` harness. Write for
 ONE persona at a time, not a blend. The active persona is chosen per task
-(explicit choice → repo `CLAUDE.md` default → ask). The `hvti_graphics` recipes
+(explicit choice → repo `CLAUDE.md` default → ask). The `hvtiGraphics` recipes
 book defaults to persona (a); the public CRAN packages (`ggRandomForests`,
 `temporal_hazard`) default to persona (d).
 

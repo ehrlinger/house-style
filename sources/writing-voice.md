@@ -101,7 +101,7 @@ register matches the task.
   opener, one rhetorical-question hook, one carried picture, understatement,
   "we"/"you", no marketing tricolons.
 - **Recipe book ("When to use it" sections)**: the Survival Plots chapter
-  opener in `hvti_graphics/survival.qmd`. Narrative register aimed at a
+  opener in `hvtiGraphics/survival.qmd`. Narrative register aimed at a
   biostatistician reader: names the clinical question first ("how long until an
   event"), defines the one idea that makes the method its own (right-censoring),
   ties the function to the SAS macro the reader already trusts (`%kaplan`), and
