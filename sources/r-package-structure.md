@@ -231,10 +231,18 @@ directory per repository, with the whole `dev/` tree carried by a single
 the record of why a thing was built the way it was outlives the diff that built
 it, and it is worth more to the next reader.
 
-A file is named `<YYYY-MM-DD>-<slug>-design.md` or `<YYYY-MM-DD>-<slug>-plan.md`.
-The suffix carries the design/plan distinction, and the path does not: a design
-and the plan implementing it share a slug, so they sort adjacent and one
-directory listing answers whether a design was ever planned.
+A file is named `<YYYY-MM-DD>-<slug>-<kind>.md`. The kind carries the
+design/plan distinction, and the path does not: a design and the plan
+implementing it share a slug, so they sort adjacent and one directory listing
+answers whether a design was ever planned.
+
+`design` and `plan` are the two kinds that pair, and most records are one or
+the other. They are not the only two — a `-findings` report, a `-learnings`
+write-up or a `-sweep` is a development record and lives here under its own
+kind. What the name has to carry is a date, a slug and a kind; the requirement
+is not that the kind be one of a closed set. Do not relabel a findings report as
+a design to satisfy a pattern, which loses the one thing the name was telling
+you.
 
 The portfolio previously encoded that distinction twice, as a `-design` suffix
 *and* a `specs/plans/` subdirectory. Two encodings of one fact drift, and this
