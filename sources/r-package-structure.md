@@ -84,12 +84,11 @@ Six are required of every package, in this order:
 5. **GitHub r-package version**
 6. **lint**
 
-Where a package runs these workflows, the badge is required: what is missing
-is often the badge rather than the machinery. A workflow running green that
-the README never mentions is coverage nobody can see, which is its own small
-version of
-the staleness problem — the check works, and the reader has no way to know.
-repostatus is a static shield with no infrastructure behind it at all, and the
+Where the thing behind a badge exists, the badge is required: what is missing
+is more often the badge than the machinery. A check running green that the
+README never mentions is signal nobody can see, which is its own small version
+of the staleness problem — the check works, and the reader has no way to know.
+Two of the six need no machinery at all: repostatus is a static shield, and the
 version badge just reads `DESCRIPTION`, so neither has an excuse.
 
 Where a badge is genuinely missing because the underlying thing is missing,
