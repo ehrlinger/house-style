@@ -259,10 +259,10 @@ loose working note that is neither a design nor a plan sits directly in `dev/`.
 
 A generated corpus that a spec asserts against — scan output, extracted maps,
 and the CI scripts comparing the two — goes in `dev/specs/artifacts/`, nested
-inside the prose directory rather than placed beside it. That nesting is load
-bearing: those scripts locate the document they check relative to their own
-file, so lifting `artifacts/` up one level silently repoints them at the wrong
-directory.
+inside the prose directory rather than placed beside it. That nesting is
+load-bearing: those scripts locate the document they check relative to their
+own file, so lifting `artifacts/` up one level silently repoints them at the
+wrong directory.
 
 `ROADMAP.md` is not a development record. It says where the package is going
 rather than what was decided on a given date, and it is read by people who will
