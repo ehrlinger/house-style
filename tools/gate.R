@@ -7,8 +7,8 @@
 # the one moment where that tolerance is wrong: just before house-style-v1
 # moves, on a machine that does have the vault. There, "the mirror check did
 # not run" and "the mirror is stale" have the same consequence -- the governed
-# repos recompose against sources nobody verified -- so they get the same exit
-# code.
+# repositories recompose against sources nobody verified -- so they get the
+# same exit code.
 
 suppressMessages(library(testthat))
 

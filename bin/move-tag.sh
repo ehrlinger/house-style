@@ -36,7 +36,7 @@ done
 
 if [ -z "$message" ]; then
   echo "Usage: bin/move-tag.sh -m \"what changed\" [commit] [--yes]" >&2
-  echo "The message is not optional: it is the only record of why the governed repos went red." >&2
+  echo "The message is not optional: it is the only record of why the governed repositories went red." >&2
   exit 1
 fi
 
@@ -128,4 +128,4 @@ git push -f origin "$TAG"
 
 echo ""
 echo "$TAG now at $(git rev-parse --short "$sha"), archived as $archive."
-echo "Governed repos will report drift on their next run until they recompose."
+echo "Governed repositories will report drift on their next run until they recompose."

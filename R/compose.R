@@ -50,7 +50,7 @@ load_registry <- function(path) {
   entries <- raw$repos
 
   if (!length(entries)) {
-    stop("Registry ", path, " contains no repos.", call. = FALSE)
+    stop("Registry ", path, " contains no repositories.", call. = FALSE)
   }
 
   lapply(entries, function(e) {
