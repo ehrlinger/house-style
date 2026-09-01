@@ -704,6 +704,22 @@ change included. That case used to carry a bump of its own, which is the rule
 this replaces. When you want a marker, one commit renames the heading to the
 new version and moves `DESCRIPTION` to match.
 
+### Heading level
+
+Version headings are level one, and so is the unreleased heading. That is not
+only tidiness. pkgdown reads the top heading level present in the file as the
+version level, so a `NEWS.md` opening with a bare `# <package>` title pushes
+its versions to level two, and pkgdown then reports no releases at all.
+hvtiRpropensity published an empty changelog page that way. It went unseen
+because `utils::news()` uses a different parser and read the same file
+correctly the whole time, so nothing local ever failed.
+
+Nine packages already used level one. ggRandomForests writes its level-one
+headings in setext form, with a rule of `=` underneath, which is the same
+level spelled differently and needs no change. hvtiR and hvtiRpropensity were
+at level two and moved. Subsections within a release, `## New features` and
+the like, sit below the version heading as usual.
+
 The two records answer different questions. `NEWS.md` answers what changed,
 and it is best written while the change is fresh, in the branch that made it.
 The version answers which set of changes is worth naming, and only the
