@@ -2,7 +2,8 @@
 #
 # move-tag.sh — advance house-style-v1, but only from a verified state.
 #
-# Moving this tag is the propagation event: ten repositories pin it, and the
+# Moving this tag is the propagation event: every governed repository pins it,
+# and the
 # next push in each recomposes against whatever sources/ holds at the new
 # commit. It is therefore the last point where stale sources are cheap to
 # catch, and the only one that is guaranteed to run on a machine with the
@@ -35,7 +36,7 @@ done
 
 if [ -z "$message" ]; then
   echo "Usage: bin/move-tag.sh -m \"what changed\" [commit] [--yes]" >&2
-  echo "The message is not optional: it is the only record of why ten repos went red." >&2
+  echo "The message is not optional: it is the only record of why the governed repositories went red." >&2
   exit 1
 fi
 
@@ -53,8 +54,8 @@ sha="$(git rev-parse --verify "${target}^{commit}")" \
 git fetch --quiet origin main
 git merge-base --is-ancestor "$sha" origin/main \
   || fail "$(git rev-parse --short "$sha") is not an ancestor of origin/main.
-         Tagging an unpushed commit points ten repositories at a commit they
-         cannot fetch. Merge to main first."
+         Tagging an unpushed commit points every governed repository at a
+         commit it cannot fetch. Merge to main first."
 
 # The gate must see the tree being tagged, not the tree you happen to have
 # checked out. Verifying HEAD and then tagging something else would be the
@@ -81,7 +82,7 @@ echo "    from  $(git rev-parse --short "$TAG" 2>/dev/null || echo '(does not ex
 echo "    to    $(git rev-parse --short "$sha")  $(git log -1 --format=%s "$sha")"
 echo "    note  $message"
 echo ""
-echo "This makes all ten governed repositories report drift until each recomposes."
+echo "This makes every governed repository report drift until it recomposes."
 
 if [ "$assume_yes" -ne 1 ]; then
   printf 'Proceed? [y/N] '
@@ -127,4 +128,4 @@ git push -f origin "$TAG"
 
 echo ""
 echo "$TAG now at $(git rev-parse --short "$sha"), archived as $archive."
-echo "Governed repos will report drift on their next run until they recompose."
+echo "Governed repositories will report drift on their next run until they recompose."
