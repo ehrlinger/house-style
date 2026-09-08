@@ -32,6 +32,11 @@ repos:
     profile: package-internal
     default_persona: a
     secondary_personas: [c]
+  - name: hvtiRimputation
+    path: ~/Documents/GitHub/hvtiRimputation
+    profile: package-internal
+    default_persona: a
+    secondary_personas: [c]
   - name: hvtiRtemplates
     path: ~/Documents/GitHub/hvtiRtemplates
     profile: package-internal
