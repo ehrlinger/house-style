@@ -296,8 +296,8 @@ globs, they double every run.
 | `test-coverage.yaml` | How much of the code do the tests reach, and which way is it moving? | `push[main]`, `pull_request` | ubuntu·release |
 | `lint.yaml` | Does it match the style the rest of the portfolio is written in? | `push[main]`, `pull_request` | ubuntu·release |
 | `lint.yaml` → `docs-current` job | Do the generated `man/` files still match their roxygen sources? | `pull_request` | ubuntu·release |
-| `pkgdown.yaml` | Does the docs site still build, and does every exported topic still have a home? | `push[main]`, `pull_request`, `release`, `dispatch` | ubuntu·release |
-| `check-manual.yaml` | Does the PDF manual build, and is every `.Rd` free of raw Unicode? | `push[main]`, `release: published`, `workflow_dispatch` | ubuntu·release |
+| `pkgdown.yaml` | Does the docs site still build, and does every exported topic still have a home? | `push[main]`, `pull_request`, `dispatch` | ubuntu·release |
+| `check-manual.yaml` | Does the PDF manual build, and is every `.Rd` free of raw Unicode? | `push[main]`, `workflow_dispatch` | ubuntu·release |
 
 `R-CMD-check.yaml` runs `r-lib/actions/check-r-package@v2` and leaves `args`
 at its default, which is `c("--no-manual", "--as-cran")` — so the CRAN gate is
