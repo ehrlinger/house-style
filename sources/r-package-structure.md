@@ -296,7 +296,7 @@ globs, they double every run.
 | `test-coverage.yaml` | How much of the code do the tests reach, and which way is it moving? | `push[main]`, `pull_request` | ubuntu·release |
 | `lint.yaml` | Does it match the style the rest of the portfolio is written in? | `push[main]`, `pull_request` | ubuntu·release |
 | `lint.yaml` → `docs-current` job | Do the generated `man/` files still match their roxygen sources? | `pull_request` | ubuntu·release |
-| `pkgdown.yaml` | Does the docs site still build, and does every exported topic still have a home? | `push[main]`, `pull_request`, `dispatch` | ubuntu·release |
+| `pkgdown.yaml` | Does the docs site still build, and does every exported topic still have a home? | `push[main]`, `pull_request`, `workflow_dispatch` | ubuntu·release |
 | `check-manual.yaml` | Does the PDF manual build, and is every `.Rd` free of raw Unicode? | `push[main]`, `workflow_dispatch` | ubuntu·release |
 
 `R-CMD-check.yaml` runs `r-lib/actions/check-r-package@v2` and leaves `args`
@@ -704,9 +704,11 @@ change included, unless it ships nothing. That case used to carry a bump of
 its own, which is the rule this replaces. When you want a marker, one commit
 renames the heading to the new version and moves `DESCRIPTION` to match.
 
-A change ships nothing when `.Rbuildignore` excludes every file it touches:
-in most packages `.github/`, `AGENTS.md`, `CLAUDE.md` and `dev/`. Nothing it
-changes reaches the built package, so nothing a user installs has changed.
+A change ships nothing when the base branch's `.Rbuildignore` excludes every
+file it touches: in most packages `.github/`, `AGENTS.md`, `CLAUDE.md` and
+`dev/`. A pull request that edits `.Rbuildignore` is judged by the file it
+started from, so it cannot exempt itself. Nothing it changes reaches the
+built package, so nothing a user installs has changed.
 `NEWS.md` is the changelog readers see on the pkgdown site, and an entry about
 a workflow trigger or an agent contract is noise there. The pull request and
 its commit message carry that record instead, and such a change carries no
