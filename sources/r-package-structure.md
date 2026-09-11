@@ -754,11 +754,12 @@ branches claiming one number after a silent merge, so the rule becomes: the
 version must not go backwards, and when it moves it moves by a legal step. Not
 moving is no longer a failure.
 
-It also has to let a CI-only pull request through. An unchanged version passes
-only when the unreleased heading is present, so a CI-only change that lands
-just after a bump, while the heading is gone, fails. Until the check learns to
-skip a diff confined to `.github/`, such a pull request adds the bare heading
-with nothing under it.
+It also has to let a CI-only pull request through, since that change carries
+no entry and no bump. An unchanged version once passed only when the
+unreleased heading was present, so a CI-only change that landed just after a
+bump, while the heading was gone, failed. The check now takes the pull
+request's changed files and accepts an unchanged version when every one sits
+under `.github/` (ehrlinger/hvtiR#69).
 
 The other nine packages have no such check. Adding one is worth doing, and the
 unreleased heading makes it easier to write than it was, since the test finally
