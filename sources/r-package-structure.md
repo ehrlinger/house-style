@@ -700,16 +700,18 @@ not yet been named:
 ```
 
 Every pull request adds its entry under that heading, a documentation-only
-change included, unless it is CI-only. That case used to carry a bump of its
-own, which is the rule this replaces. When you want a marker, one commit
+change included, unless it ships nothing. That case used to carry a bump of
+its own, which is the rule this replaces. When you want a marker, one commit
 renames the heading to the new version and moves `DESCRIPTION` to match.
 
-A CI-only change is one confined to `.github/`. Every package lists
-`^\.github$` in `.Rbuildignore`, so nothing under it reaches the built
-package, and nothing a user installs has changed. `NEWS.md` is the changelog
-readers see on the pkgdown site, and an entry about a workflow trigger is
-noise there. The pull request and its commit message carry that record
-instead. A CI-only change carries no bump either.
+A change ships nothing when `.Rbuildignore` excludes every file it touches:
+in most packages `.github/`, `AGENTS.md`, `CLAUDE.md` and `dev/`. Nothing it
+changes reaches the built package, so nothing a user installs has changed.
+`NEWS.md` is the changelog readers see on the pkgdown site, and an entry about
+a workflow trigger or an agent contract is noise there. The pull request and
+its commit message carry that record instead, and such a change carries no
+bump either. The list differs by package, so read `.Rbuildignore` rather than
+judging by feel; `hvtiRdatabuild`'s contract said so first.
 
 ### Heading level
 
@@ -754,12 +756,12 @@ branches claiming one number after a silent merge, so the rule becomes: the
 version must not go backwards, and when it moves it moves by a legal step. Not
 moving is no longer a failure.
 
-It also has to let a CI-only pull request through, since that change carries
-no entry and no bump. An unchanged version once passed only when the
-unreleased heading was present, so a CI-only change that landed just after a
-bump, while the heading was gone, failed. The check now takes the pull
-request's changed files and accepts an unchanged version when every one sits
-under `.github/` (ehrlinger/hvtiR#69).
+It also has to let a pull request that ships nothing through, since that
+change carries no entry and no bump. An unchanged version once passed only
+when the unreleased heading was present, so such a change that landed just
+after a bump, while the heading was gone, failed. The check now takes the pull
+request's changed files and accepts an unchanged version when the base
+branch's `.Rbuildignore` excludes every one (ehrlinger/hvtiR#69).
 
 The other nine packages have no such check. Adding one is worth doing, and the
 unreleased heading makes it easier to write than it was, since the test finally
