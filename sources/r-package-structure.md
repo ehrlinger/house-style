@@ -700,9 +700,16 @@ not yet been named:
 ```
 
 Every pull request adds its entry under that heading, a documentation-only
-change included. That case used to carry a bump of its own, which is the rule
-this replaces. When you want a marker, one commit renames the heading to the
-new version and moves `DESCRIPTION` to match.
+change included, unless it is CI-only. That case used to carry a bump of its
+own, which is the rule this replaces. When you want a marker, one commit
+renames the heading to the new version and moves `DESCRIPTION` to match.
+
+A CI-only change is one confined to `.github/`. Every package lists
+`^\.github$` in `.Rbuildignore`, so nothing under it reaches the built
+package, and nothing a user installs has changed. `NEWS.md` is the changelog
+readers see on the pkgdown site, and an entry about a workflow trigger is
+noise there. The pull request and its commit message carry that record
+instead. A CI-only change carries no bump either.
 
 ### Heading level
 
@@ -746,6 +753,12 @@ most pull requests now look like. The defect it was built for is real, two
 branches claiming one number after a silent merge, so the rule becomes: the
 version must not go backwards, and when it moves it moves by a legal step. Not
 moving is no longer a failure.
+
+It also has to let a CI-only pull request through. An unchanged version passes
+only when the unreleased heading is present, so a CI-only change that lands
+just after a bump, while the heading is gone, fails. Until the check learns to
+skip a diff confined to `.github/`, such a pull request adds the bare heading
+with nothing under it.
 
 The other nine packages have no such check. Adding one is worth doing, and the
 unreleased heading makes it easier to write than it was, since the test finally
