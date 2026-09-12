@@ -711,6 +711,7 @@ file it touches: in most packages `.claude/`, `.github/`, `AGENTS.md`,
 judged by the base branch's copy, the one it started from, so it cannot exempt
 itself; hvtiR's `version-check` reads that copy for the same reason. Nothing it
 changes reaches the built package, so nothing a user installs has changed.
+
 `NEWS.md` is the changelog readers see on the pkgdown site, and an entry about
 a workflow trigger or an agent contract is noise there. The pull request and
 its commit message carry that record instead, and such a change carries no
