@@ -700,15 +700,17 @@ not yet been named:
 ```
 
 Every pull request adds its entry under that heading, a documentation-only
-change included, unless it ships nothing. That case used to carry a bump of
-its own, which is the rule this replaces. When you want a marker, one commit
-renames the heading to the new version and moves `DESCRIPTION` to match.
+change included, unless it ships nothing in the sense defined below. That case
+used to carry a bump of its own, which is the rule this replaces. When you want
+a marker, one commit renames the heading to the new version and moves
+`DESCRIPTION` to match.
 
 A change ships nothing when the base branch's `.Rbuildignore` excludes every
-file it touches: in most packages `.github/`, `AGENTS.md`, `CLAUDE.md` and
-`dev/`. A pull request that edits `.Rbuildignore` is judged by the file it
-started from, so it cannot exempt itself. Nothing it changes reaches the
-built package, so nothing a user installs has changed.
+file it touches: in most packages `.claude/`, `.github/`, `AGENTS.md`,
+`CLAUDE.md` and `dev/`. A pull request that edits `.Rbuildignore` is still
+judged by the base branch's copy, the one it started from, so it cannot exempt
+itself; hvtiR's `version-check` reads that copy for the same reason. Nothing it
+changes reaches the built package, so nothing a user installs has changed.
 `NEWS.md` is the changelog readers see on the pkgdown site, and an entry about
 a workflow trigger or an agent contract is noise there. The pull request and
 its commit message carry that record instead, and such a change carries no
