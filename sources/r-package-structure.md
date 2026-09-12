@@ -709,8 +709,11 @@ A change ships nothing when the base branch's `.Rbuildignore` excludes every
 file it touches: in most packages `.claude/`, `.github/`, `AGENTS.md`,
 `CLAUDE.md` and `dev/`. A pull request that edits `.Rbuildignore` is still
 judged by the base branch's copy, the one it started from, so it cannot exempt
-itself; hvtiR's `version-check` reads that copy for the same reason. Nothing it
-changes reaches the built package, so nothing a user installs has changed.
+itself; hvtiR's `version-check` reads that copy for the same reason.
+`.Rbuildignore` itself never ships: `R CMD build` tests a built-in list of
+exclusions before the file's own patterns, and that list begins with it. So a
+change confined to `.Rbuildignore` ships nothing too. Nothing such a change
+touches reaches the built package, so nothing a user installs has changed.
 
 `NEWS.md` is the changelog readers see on the pkgdown site, and an entry about
 a workflow trigger or an agent contract is noise there. The pull request and
