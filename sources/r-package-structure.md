@@ -299,6 +299,19 @@ globs, they double every run.
 | `pkgdown.yaml` | Does the docs site still build, and does every exported topic still have a home? | `push[main]`, `pull_request`, `workflow_dispatch` | ubuntu·release |
 | `check-manual.yaml` | Does the PDF manual build, and is every `.Rd` free of raw Unicode? | `push[main]`, `workflow_dispatch` | ubuntu·release |
 
+**CI exemption.** TemporalHazard checks a pull request on Linux only. Its
+three ubuntu `R-CMD-check` jobs run on every pull request. The macos·release
+and windows·release jobs stay in the matrix, because they are required status
+checks, but on a pull request they skip every step and report "NOT CHECKED on
+pull requests"; they check in full on `push` to `main` and on
+`workflow_dispatch`. `test-coverage.yaml` runs on `push` to `main` only, and
+`pkgdown.yaml` on `push` to `main` and `workflow_dispatch`. Before a release is
+submitted, `check-release.yaml` is dispatched by hand, so macOS and Windows
+are checked again before CRAN sees the package. The package is used on Linux
+at HVTI, and a median fourteen- and forty-five-minute wait on every pull
+request bought nothing that use needs. TemporalHazard's `AGENTS.md` records
+what the trade costs. Every other package follows the table above.
+
 `R-CMD-check.yaml` runs `r-lib/actions/check-r-package@v2` and leaves `args`
 at its default, which is `c("--no-manual", "--as-cran")` — so the CRAN gate is
 already on, and a second workflow to "add `--as-cran`" is adding nothing. Set
