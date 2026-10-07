@@ -425,7 +425,8 @@ only. It runs `python3 .github/scripts/news.py check` and fails a pull request
 that changes a file the package ships and adds no `news/` fragment (see "The
 bump is not part of the pull request"). Ships nothing is judged by the base
 branch's `.Rbuildignore`, and the bump consumes fragments rather than adding
-one, so a pull request that moves `Version:` or deletes a fragment passes too.
+one, so a pull request that moves `Version:`, or deletes fragments and edits
+`NEWS.md`, passes too.
 The second case is a collect into a heading that already exists, as
 ggRandomForests' `(development)` section is, with `Version:` standing still. The question is
 one no other workflow asks: with entries in their own files, a forgotten one is
