@@ -93,10 +93,10 @@ that floor: `hvtiRlifetables` needs `TemporalHazard (>= 1.2.0)`, which CRAN
 does not carry. It takes no package argument; it installs the family. The
 single-package line uses `pak`, not `remotes::install_github()`, so every
 README names one tool. Anything else a package needs (a backend fork, a renv
-workflow) follows the two blocks. A `package-cran` README keeps
-`install.packages()` for the release and `pak::pak("ehrlinger/<pkg>")` for
-the development version, and does not mention `hvtiR`: a CRAN reader has not
-joined the family.
+workflow) follows the two blocks. A `package-cran` README gives
+`install.packages()` for the release and a line that installs the
+development version from GitHub, with whichever tool it already uses, and
+does not mention `hvtiR`: a CRAN reader has not joined the family.
 
 **Badge tiers.** The order below is fixed; the contents are not. Include a
 badge when the thing it reports on exists, skip it when it doesn't, and don't
