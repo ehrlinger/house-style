@@ -1,0 +1,37 @@
+{"data": {
+  "r0": {"name": "pkgA", "pullRequests": {"totalCount": 4, "nodes": [
+    {"number": 1, "title": "green", "isDraft": false, "mergeable": "MERGEABLE",
+     "reviewDecision": null, "updatedAt": "2026-10-25T12:00:00Z",
+     "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
+       {"__typename": "CheckRun", "name": "lint", "status": "COMPLETED", "conclusion": "SUCCESS"},
+       {"__typename": "CheckRun", "name": "skipped-on-pr", "status": "COMPLETED", "conclusion": "SKIPPED"},
+       {"__typename": "StatusContext", "context": "codecov", "state": "SUCCESS"}]}}}}]}},
+    {"number": 2, "title": "red beats waiting", "isDraft": false, "mergeable": "MERGEABLE",
+     "reviewDecision": "APPROVED", "updatedAt": "2026-10-25T12:00:00Z",
+     "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
+       {"__typename": "CheckRun", "name": "lint", "status": "COMPLETED", "conclusion": "FAILURE"},
+       {"__typename": "StatusContext", "context": "ci/legacy", "state": "ERROR"},
+       {"__typename": "CheckRun", "name": "check", "status": "QUEUED", "conclusion": null}]}}}}]}},
+    {"number": 3, "title": "waiting", "isDraft": false, "mergeable": "UNKNOWN",
+     "reviewDecision": null, "updatedAt": "2026-10-25T12:00:00Z",
+     "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
+       {"__typename": "CheckRun", "name": "a", "status": "QUEUED", "conclusion": null},
+       {"__typename": "CheckRun", "name": "b", "status": "WAITING", "conclusion": null},
+       {"__typename": "CheckRun", "name": "c", "status": "IN_PROGRESS", "conclusion": null},
+       {"__typename": "StatusContext", "context": "d", "state": "PENDING"}]}}}}]}},
+    {"number": 4, "title": "conflict beats red", "isDraft": false, "mergeable": "CONFLICTING",
+     "reviewDecision": null, "updatedAt": "2026-10-25T12:00:00Z",
+     "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
+       {"__typename": "CheckRun", "name": "lint", "status": "COMPLETED", "conclusion": "CANCELLED"}]}}}}]}}
+  ]}},
+  "r1": {"name": "pkgB", "pullRequests": {"totalCount": 2, "nodes": [
+    {"number": 9, "title": "no checks", "isDraft": false, "mergeable": "MERGEABLE",
+     "reviewDecision": null, "updatedAt": "2026-10-25T12:00:00Z",
+     "commits": {"nodes": [{"commit": {"statusCheckRollup": null}}]}},
+    {"number": 7, "title": "draft beats everything", "isDraft": true, "mergeable": "CONFLICTING",
+     "reviewDecision": null, "updatedAt": "2026-10-25T12:00:00Z",
+     "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
+       {"__typename": "CheckRun", "name": "lint", "status": "COMPLETED", "conclusion": "FAILURE"}]}}}}]}}
+  ]}},
+  "r2": {"name": "pkgC", "pullRequests": {"totalCount": 0, "nodes": []}}
+}}
