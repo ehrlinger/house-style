@@ -18,9 +18,11 @@ that keeps each one's copy current.
 | `repos.yml` | The registry — the only place the governed repositories are enumerated |
 | `bin/move-tag.sh` | The only supported way to advance `house-style-v1` — gates on a verified mirror |
 | `bin/archive-tag-name.sh` | Names the immutable `standard-<date>` tag each move cuts; split out so it is testable |
+| `bin/pr-triage.sh` | Every open pull request across the registry, one GraphQL call, sorted by what to do with it |
+| `bin/pr-triage.jq` | The classifier behind it; a pure filter, so it is tested against a fixture |
 | `tools/gate.R` | Runs the suite in gate mode, where a skipped test counts as a failure |
 | `tools/write-manifest.R` | Regenerates `sources/MANIFEST` after a vault sync |
-| `tests/` | 148 expectations covering composition, drift detection and mirror freshness |
+| `tests/` | 262 expectations covering composition, drift detection, mirror freshness and PR triage |
 
 ## Why a composer rather than a copied file
 
@@ -67,6 +69,14 @@ status view adds that column, plus a header line showing how far
 `house-style-v1` trails `origin/main`. It exits 2 when a repo needs attention
 and 0 otherwise — a lagging tag is reported but never counted as a failure,
 since the tag is meant to lag between a merge and a deliberate move.
+
+`bin/pr-triage.sh` is for the day the merge queue is buried. It lists every open
+pull request in the registered repositories as READY, RED, CONFLICT, WAITING,
+NO-CHECKS or DRAFT, ready ones first, and counts queued checks apart from
+running ones: a queue of queued checks means the account's runners are full,
+not that anything is broken. Review state is shown but never gates READY, since
+the maintainer merges as the ruleset's bypass actor. `--json` gives the rows for
+scripting.
 
 ## Profiles
 
