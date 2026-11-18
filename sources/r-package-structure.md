@@ -55,8 +55,8 @@ Three kinds:
 - *SAS-macro port* — hvtiPlotR (`plot.sas`), hvtiRpropensity,
   hvtiRutilities (`PROC CONTENTS`, `PROC MEANS`), hvtiRtables (SAS table
   macro).
-- *Upstream fork* — hvtiBoostmtree, forked from `kogalur/boostmtree` at
-  v1.5.1.
+- *Upstream fork* — boostmtree_src, the patched build of
+  `kogalur/boostmtree` that ggBoostedTrees pins.
 - *Institutional inheritance* — TemporalHazard, from the UAB SAS/C HAZARD
   code.
 
